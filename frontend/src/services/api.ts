@@ -21,6 +21,26 @@ export const api = {
       ...options,
       headers
     });
+    
+    // Auto unpack Express wrapper { success: true, data: [...] } envelopes
+    if (res.ok) {
+      const clone = res.clone();
+      try {
+        const body = await clone.json();
+        if (body && typeof body === 'object' && 'data' in body && !('pagination' in body)) {
+          // If it is already a wrapper response but double wrapped or direct array mapping
+          res.json = async () => body;
+        } else if (body && typeof body === 'object' && ('customer' in body || 'product' in body || 'challan' in body || 'invoice' in body)) {
+          const payloadKey = Object.keys(body).find(k => k !== 'success');
+          if (payloadKey) {
+            res.json = async () => body[payloadKey];
+          }
+        }
+      } catch (e) {
+        // Fallback silently if not JSON
+      }
+    }
+    
     return res;
   },
 
