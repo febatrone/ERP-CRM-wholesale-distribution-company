@@ -51,22 +51,32 @@ model User {
 }
 
 model Customer {
-  id           String         @id @default(uuid())
-  name         String
-  mobile       String
-  email        String         @unique
-  businessName String
-  gstNumber    String?
-  type         CustomerType
-  address      String
-  status       CustomerStatus @default(LEAD)
-  followUpDate DateTime?
-  notes        String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                 String             @id @default(uuid())
+  name               String
+  mobile             String
+  email              String             @unique
+  businessName       String
+  gstNumber          String?
+  type               CustomerType
+  address            String
+  status             CustomerStatus     @default(LEAD)
+  followUpDate       DateTime?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  
+  // Advanced CRM Pipeline & Financial Fields
+  pipelineStage      String             @default("Inquiry")
+  dealValue          Decimal            @default(0.00) @db.Decimal(12, 2)
+  winProbability     Int                @default(0)
+  expectedCloseDate  DateTime?
+  assignedRep        String?
+  leadSource         String?
+  creditLimit        Decimal            @default(0.00) @db.Decimal(12, 2)
+  outstandingBalance Decimal            @default(0.00) @db.Decimal(12, 2)
 
-  followUps    CustomerFollowUp[]
-  challans     Challan[]
+  followUps          CustomerFollowUp[]
+  challans           Challan[]
 }
 
 model CustomerFollowUp {

@@ -133,6 +133,103 @@ router.post("/", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req:
   }
 });
 
+// PUT update challan status (Draft -> Confirmed -> Cancelled)
+router.put("/:id/status", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const challanId = req.params.id as string;
+    const { status } = req.body;
+    const createdById = (req.user?.id || "") as string;
+
+    if (!status || !["Draft", "Confirmed", "Cancelled"].includes(status)) {
+      return next(new AppError("Invalid status value", 400));
+    }
+
+    const uppercaseStatus = status.toUpperCase();
+
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const challan = await tx.challan.findUnique({
+        where: { id: challanId },
+        include: { items: true }
+      }) as any;
+
+      if (!challan) {
+        throw new AppError("Challan not found", 404);
+      }
+
+      if (challan.status === uppercaseStatus) {
+        return challan;
+      }
+
+      const previousStatus = challan.status;
+
+      // Update status
+      const updatedChallan = await tx.challan.update({
+        where: { id: challanId },
+        data: { status: uppercaseStatus as any }
+      });
+
+      // If transition to CONFIRMED, deduct stock
+      if (uppercaseStatus === "CONFIRMED" && previousStatus !== "CONFIRMED") {
+        const productIds = challan.items.map((i: any) => i.productId);
+        const dbProducts = await tx.product.findMany({
+          where: { id: { in: productIds } }
+        });
+        const productMap = new Map<string, Product>(dbProducts.map((p) => [p.id, p]));
+
+        for (const item of challan.items) {
+          const product = productMap.get(item.productId);
+          if (!product || product.currentStock < item.quantity) {
+            throw new AppError(`Insufficient stock for product: ${product?.name || "Unknown"} (SKU: ${product?.sku || "N/A"})`, 400);
+          }
+        }
+
+        for (const item of challan.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { currentStock: { decrement: item.quantity } }
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              productId: item.productId,
+              quantity: item.quantity,
+              type: "OUT",
+              reason: `Sales Challan Confirmation: ${challan.challanNumber}`,
+              createdById
+            }
+          });
+        }
+      }
+
+      // If transition to CANCELLED from CONFIRMED, return inventory stock
+      if (uppercaseStatus === "CANCELLED" && previousStatus === "CONFIRMED") {
+        for (const item of challan.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { currentStock: { increment: item.quantity } }
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              productId: item.productId,
+              quantity: item.quantity,
+              type: "IN",
+              reason: `Sales Challan Cancelled: ${challan.challanNumber}`,
+              createdById
+            }
+          });
+        }
+      }
+
+      return updatedChallan;
+    });
+
+    res.status(200).json({ success: true, challan: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Confirm Challan (DRAFT -> CONFIRMED transition)
 router.post("/:id/confirm", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req: AuthenticatedRequest, res, next) => {
   try {
