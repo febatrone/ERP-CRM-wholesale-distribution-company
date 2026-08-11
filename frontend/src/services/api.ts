@@ -62,6 +62,8 @@ const mapChallanToFrontend = (c: any): SalesChallan => {
   };
 };
 
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 export const api = {
   // Set auth token
   setToken(token: string | null) {
@@ -84,7 +86,12 @@ export const api = {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const res = await fetch(url, {
+    const cleanUrl = url.replace(/^\/?(api)?\/?/, '');
+    const targetUrl = url.startsWith('http') 
+      ? url 
+      : `${BASE_URL.replace(/\/$/, '')}/${cleanUrl}`;
+      
+    const res = await fetch(targetUrl, {
       ...options,
       headers
     });
@@ -124,7 +131,8 @@ export const api = {
 
   // Auth
   async login(email: string, password?: string, role?: string): Promise<{ user: User; token: string }> {
-    const res = await fetch('/api/auth/login', {
+    const targetUrl = `${BASE_URL.replace(/\/$/, '')}/auth/login`;
+    const res = await fetch(targetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, role }),
