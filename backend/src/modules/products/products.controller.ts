@@ -29,7 +29,8 @@ router.post("/", authMiddleware, roleMiddleware(["ADMIN", "WAREHOUSE"]), async (
   try {
     const parse = productSchema.safeParse(req.body);
     if (!parse.success) {
-      return next(new AppError("Validation failed", 400));
+      console.error("PRODUCT CREATION VALIDATION FAILED:", parse.error.format());
+      return next(new AppError("Validation failed: " + JSON.stringify(parse.error.format()), 400));
     }
 
     const product = await prisma.product.create({ data: parse.data });
@@ -61,7 +62,8 @@ router.put("/:id", authMiddleware, roleMiddleware(["ADMIN", "WAREHOUSE"]), async
   try {
     const parse = productSchema.partial().safeParse(req.body);
     if (!parse.success) {
-      return next(new AppError("Validation failed", 400));
+      console.error("PRODUCT UPDATE VALIDATION FAILED:", parse.error.format());
+      return next(new AppError("Validation failed: " + JSON.stringify(parse.error.format()), 400));
     }
 
     const productId = req.params.id as string;
@@ -219,6 +221,37 @@ router.get("/:id", authMiddleware, async (req, res, next) => {
       minStockAlert: product.minStockQty
     };
     res.status(200).json({ success: true, product: frontendMapped });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete Product
+router.delete("/:id", authMiddleware, roleMiddleware(["ADMIN", "WAREHOUSE"]), async (req, res, next) => {
+  try {
+    const productId = req.params.id as string;
+    
+    await prisma.$transaction(async (tx) => {
+      // Delete stock movements
+      await tx.stockMovement.deleteMany({
+        where: { productId }
+      });
+
+      // Clear/Delete any ChallanItem or InvoiceItem references to prevent database foreign key constraint errors
+      await tx.challanItem.deleteMany({
+        where: { productId }
+      });
+      await tx.invoiceItem.deleteMany({
+        where: { productId }
+      });
+
+      // Delete the product
+      await tx.product.delete({
+        where: { id: productId }
+      });
+    });
+
+    res.status(200).json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     next(error);
   }

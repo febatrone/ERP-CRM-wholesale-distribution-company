@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { DashboardStats, Product, SalesChallan, Customer, UserRole, User } from '../types';
 import {
   Users,
@@ -48,6 +48,7 @@ interface DashboardProps {
   onOpenNewCustomer: () => void;
   onViewChallanDetail: (challan: SalesChallan) => void;
   onViewCustomerDetail: (customer: Customer) => void;
+  onAddStockMovement?: (payload: { productId: string; quantity: number; movementType: 'IN' | 'OUT'; reason: string }) => Promise<void>;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -62,8 +63,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenNewCustomer,
   onViewChallanDetail,
   onViewCustomerDetail,
+  onAddStockMovement,
 }) => {
   const [chartTimeframe, setChartTimeframe] = useState<'Last 12 Months' | 'This Year'>('Last 12 Months');
+  const [restockingIds, setRestockingIds] = useState<Set<string>>(new Set());
+
+  const handleRestock = useCallback(async (product: Product) => {
+    if (!onAddStockMovement || restockingIds.has(product.id)) return;
+    setRestockingIds(prev => new Set(prev).add(product.id));
+    try {
+      await onAddStockMovement({
+        productId: product.id,
+        quantity: 50,
+        movementType: 'IN',
+        reason: `Dashboard restock: replenished 50 units of ${product.name} (SKU: ${product.sku}) via Restock Hub`,
+      });
+    } finally {
+      setRestockingIds(prev => { const s = new Set(prev); s.delete(product.id); return s; });
+    }
+  }, [onAddStockMovement, restockingIds]);
 
   // Compute monthly revenue trends from confirmed sales challans
   const monthlyRevenueData = [
@@ -535,71 +553,62 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* Quick Communication & Follow-up Panel (1 col) */}
+        {/* Quick Operations & Low Stock Alert Center (1 col) */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">Manager Contacts & Calls</h3>
+            <h3 className="font-extrabold text-slate-900 text-sm tracking-tight flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-purple-600" />
+              <span>Operations & Restock Hub</span>
+            </h3>
             <button
-              onClick={() => onNavigate('crm')}
+              onClick={() => onNavigate('inventory')}
               className="text-xs text-purple-600 hover:underline font-bold"
             >
-              View CRM →
+              Inventory →
             </button>
           </div>
 
-          {/* Communication Quick Cards */}
+          {/* Low Stock Alerts */}
           <div className="space-y-3">
-            {/* Incoming Call Badge */}
-            <div className="p-3 bg-teal-50/80 border border-teal-200/80 rounded-2xl flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-teal-500 text-white flex items-center justify-center shadow-xs">
-                  <PhoneCall className="w-4 h-4 animate-bounce" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Incoming call</p>
-                  <p className="text-[10px] text-teal-800 font-semibold">Apex Retailers (Rajesh Kumar)</p>
-                </div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700">Critical Stock Warnings</p>
+            {lowStockProducts.length === 0 ? (
+              <div className="p-4 bg-emerald-50/50 border border-emerald-100/80 rounded-2xl text-center">
+                <p className="text-xs font-bold text-emerald-800">All Stock Levels Healthy</p>
+                <p className="text-[10px] text-emerald-600 mt-0.5">No immediate restock required.</p>
               </div>
-              <button
-                onClick={() => alert('Answering incoming CRM client call...')}
-                className="px-2.5 py-1 bg-teal-600 text-white rounded-xl text-[10px] font-extrabold shadow-2xs hover:bg-teal-700"
-              >
-                Accept
-              </button>
-            </div>
-
-            {/* Missed Call Notice */}
-            <div className="p-3 bg-pink-50/80 border border-pink-200/80 rounded-2xl flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-xs">
-                  <PhoneCall className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Call missed</p>
-                  <p className="text-[10px] text-pink-800 font-semibold">Metro Mart Wholesale</p>
-                </div>
+            ) : (
+              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                {lowStockProducts.slice(0, 3).map((p) => (
+                  <div key={p.id} className="p-3 bg-amber-50/80 border border-amber-200/60 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{p.name}</p>
+                      <p className="text-[10px] text-amber-800 font-semibold">SKU: {p.sku} • Stock: {p.currentStock}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRestock(p)}
+                      disabled={restockingIds.has(p.id)}
+                      className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white rounded-xl text-[10px] font-extrabold shadow-2xs transition-all"
+                    >
+                      {restockingIds.has(p.id) ? '...' : 'Restock'}
+                    </button>
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={() => alert('Initiating callback to Metro Mart Wholesale...')}
-                className="px-2.5 py-1 bg-white text-pink-700 border border-pink-300 rounded-xl text-[10px] font-extrabold hover:bg-pink-100"
-              >
-                Callback
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Pending Follow-ups */}
+          {/* Today's Follow-ups */}
           <div className="pt-2 space-y-2.5">
-            <span className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 flex items-center space-x-1.5">
               <Clock className="w-4 h-4 text-purple-600" />
-              <span>Today's Follow-up Tasks</span>
+              <span>Pending CRM Follow-ups</span>
             </span>
 
             {upcomingFollowUps.length === 0 ? (
               <p className="text-xs text-slate-400 italic">No pending follow-ups scheduled today.</p>
             ) : (
               <div className="space-y-2">
-                {upcomingFollowUps.slice(0, 3).map((cust) => (
+                {upcomingFollowUps.slice(0, 2).map((cust) => (
                   <div
                     key={cust.id}
                     onClick={() => onViewCustomerDetail(cust)}

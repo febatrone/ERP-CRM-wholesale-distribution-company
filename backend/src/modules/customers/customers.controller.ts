@@ -15,14 +15,22 @@ const customerSchema = z.object({
   type: z.enum(["RETAIL", "WHOLESALE", "DISTRIBUTOR"]),
   address: z.string().min(1),
   status: z.enum(["LEAD", "ACTIVE", "INACTIVE"]).default("LEAD"),
-  followUpDate: z.string().datetime().optional().nullable(),
+  followUpDate: z.string().optional().nullable().transform(val => {
+    if (!val || val.trim() === "") return null;
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }),
   notes: z.string().optional().nullable(),
   
   // Advanced CRM Pipeline & Financial Fields
   pipelineStage: z.string().optional().default("Inquiry"),
   dealValue: z.number().optional().default(0),
   winProbability: z.number().int().optional().default(0),
-  expectedCloseDate: z.string().datetime().optional().nullable(),
+  expectedCloseDate: z.string().optional().nullable().transform(val => {
+    if (!val || val.trim() === "") return null;
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }),
   assignedRep: z.string().optional().nullable(),
   leadSource: z.string().optional().nullable(),
   creditLimit: z.number().optional().default(0),
@@ -34,7 +42,8 @@ router.post("/", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req:
   try {
     const parse = customerSchema.safeParse(req.body);
     if (!parse.success) {
-      return next(new AppError("Validation failed", 400));
+      console.error("CUSTOMER CREATION VALIDATION FAILED:", parse.error.format());
+      return next(new AppError("Validation failed: " + JSON.stringify(parse.error.format()), 400));
     }
 
     const customer = await prisma.customer.create({
@@ -59,7 +68,8 @@ router.put("/:id", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (re
   try {
     const parse = customerSchema.partial().safeParse(req.body);
     if (!parse.success) {
-      return next(new AppError("Validation failed", 400));
+      console.error("CUSTOMER UPDATE VALIDATION FAILED:", parse.error.format());
+      return next(new AppError("Validation failed: " + JSON.stringify(parse.error.format()), 400));
     }
 
     const customerId = req.params.id as string;
@@ -138,7 +148,7 @@ router.get("/analytics", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCO
 });
 
 // Query / Search / Paginate Customers
-router.get("/", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS"]), async (req, res, next) => {
+router.get("/", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS", "WAREHOUSE"]), async (req, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -197,7 +207,7 @@ router.get("/", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS"]), 
 });
 
 // Get Single Customer Details
-router.get("/:id", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS"]), async (req, res, next) => {
+router.get("/:id", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS", "WAREHOUSE"]), async (req, res, next) => {
   try {
     const customerId = req.params.id as string;
     const customer = await prisma.customer.findUnique({
@@ -219,8 +229,31 @@ router.get("/:id", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS"]
 router.delete("/:id", authMiddleware, roleMiddleware(["ADMIN"]), async (req, res, next) => {
   try {
     const customerId = req.params.id as string;
-    await prisma.customer.delete({ where: { id: customerId } });
-    res.status(200).json({ success: true, message: "Customer deleted successfully" });
+    
+    await prisma.$transaction(async (tx) => {
+      // Find all challans for this customer
+      const challans = await tx.challan.findMany({
+        where: { customerId }
+      });
+      const challanIds = challans.map(c => c.id);
+
+      // Delete all invoices related to those challans
+      await tx.invoice.deleteMany({
+        where: { challanId: { in: challanIds } }
+      });
+
+      // Delete all challans (which cascade deletes ChallanItems due to onDelete: Cascade on ChallanItem relation)
+      await tx.challan.deleteMany({
+        where: { customerId }
+      });
+
+      // Finally, delete the customer
+      await tx.customer.delete({
+        where: { id: customerId }
+      });
+    });
+
+    res.status(200).json({ success: true, message: "Customer and related records deleted successfully" });
   } catch (error) {
     next(error);
   }
@@ -244,7 +277,7 @@ router.get("/:id/followups", authMiddleware, roleMiddleware(["ADMIN", "SALES", "
 router.post("/:id/followups", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req: AuthenticatedRequest, res, next) => {
   try {
     const customerId = req.params.id as string;
-    const { note, date } = req.body;
+    const { note, date, activityType, priority } = req.body;
     if (!note || typeof note !== "string" || note.trim() === "") {
       return next(new AppError("Followup note content required", 400));
     }
@@ -254,7 +287,9 @@ router.post("/:id/followups", authMiddleware, roleMiddleware(["ADMIN", "SALES"])
         data: {
           customerId,
           notes: note.trim(),
-          createdBy: req.user?.email || "System"
+          createdBy: req.user?.email || "System",
+          activityType: activityType || null,
+          priority: priority || null
         }
       });
 

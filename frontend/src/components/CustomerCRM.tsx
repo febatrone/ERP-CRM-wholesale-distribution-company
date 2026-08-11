@@ -46,6 +46,7 @@ interface CustomerCRMProps {
   onOpenNewChallanForCustomer?: (customerId: string) => void;
   viewMode?: 'kanban' | 'table' | 'analytics';
   onViewModeChange?: (mode: 'kanban' | 'table' | 'analytics') => void;
+  onDeleteCustomer?: (id: string) => Promise<void>;
 }
 
 const PIPELINE_STAGES: { id: PipelineStage; label: string; color: string; border: string; bg: string }[] = [
@@ -70,6 +71,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
   onOpenNewChallanForCustomer,
   viewMode: propViewMode,
   onViewModeChange,
+  onDeleteCustomer,
 }) => {
   const [viewMode, setViewMode] = useState<'kanban' | 'table' | 'analytics'>(propViewMode || 'kanban');
 
@@ -621,14 +623,27 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                     <td className="py-3 px-4 text-right space-x-1">
                       <button
                         onClick={() => openEditModal(cust)}
-                        className="p-1 text-slate-400 hover:text-indigo-600 rounded"
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 rounded border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
                         title="Edit Lead"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
+                      {onDeleteCustomer && (userRole === 'Admin' || userRole === 'Sales') && (
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to delete ${cust.name}?`)) {
+                              await onDeleteCustomer(cust.id);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 rounded border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
+                          title="Delete Lead"
+                        >
+                          <X className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      )}
                       <button
                         onClick={() => onSelectCustomerForDetail(cust)}
-                        className="px-2.5 py-1 bg-indigo-600 text-white font-bold rounded text-[11px] hover:bg-indigo-700"
+                        className="px-2.5 py-1 bg-indigo-600 text-white font-bold rounded text-[11px] hover:bg-indigo-700 shadow-2xs transition-all"
                       >
                         Inspect
                       </button>
@@ -717,12 +732,37 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                   </div>
                   <h3 className="text-xl font-bold text-slate-900">{selectedCustomerForDetail.businessName}</h3>
                 </div>
-                <button
-                  onClick={() => onSelectCustomerForDetail(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      openEditModal(selectedCustomerForDetail);
+                    }}
+                    className="p-2 text-slate-500 hover:text-indigo-600 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all"
+                    title="Edit Customer"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  {onDeleteCustomer && (userRole === 'Admin' || userRole === 'Sales') && (
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Are you sure you want to delete ${selectedCustomerForDetail.name}?`)) {
+                          await onDeleteCustomer(selectedCustomerForDetail.id);
+                          onSelectCustomerForDetail(null);
+                        }
+                      }}
+                      className="p-2 text-slate-500 hover:text-red-650 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all"
+                      title="Delete Customer"
+                    >
+                      <X className="w-4 h-4 text-red-500" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onSelectCustomerForDetail(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Drawer Tab Navigation */}
@@ -1061,6 +1101,31 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                     placeholder="contact@business.com"
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">GSTIN / Tax Number</label>
+                  <input
+                    type="text"
+                    value={formData.gstNumber}
+                    onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value.toUpperCase() })}
+                    placeholder="e.g. 27AAAAA0000A1Z5"
+                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Account Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as CustomerStatus })}
+                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                  >
+                    <option value="Lead">Lead</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
                 </div>
               </div>
 

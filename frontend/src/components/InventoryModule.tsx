@@ -15,6 +15,7 @@ interface InventoryModuleProps {
     reason: string;
   }) => Promise<void>;
   initialLowStockFilter?: boolean;
+  onDeleteProduct?: (id: string) => Promise<void>;
 }
 
 export const InventoryModule: React.FC<InventoryModuleProps> = ({
@@ -24,6 +25,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
   onUpdateProduct,
   onAddStockMovement,
   initialLowStockFilter = false,
+  onDeleteProduct,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -354,10 +356,23 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                         {(userRole === 'Admin' || userRole === 'Warehouse') && (
                           <button
                             onClick={() => openEditProductModal(p)}
-                            className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded"
+                            className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded transition-all"
                             title="Edit Product"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {onDeleteProduct && (userRole === 'Admin' || userRole === 'Warehouse') && (
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Are you sure you want to delete product ${p.name} (SKU: ${p.sku})?`)) {
+                                await onDeleteProduct(p.id);
+                              }
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-650 hover:bg-slate-100 rounded transition-all"
+                            title="Delete Product"
+                          >
+                            <X className="w-3.5 h-3.5 text-red-500" />
                           </button>
                         )}
                       </div>
@@ -433,9 +448,10 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   <input
                     type="number"
                     min="0"
+                    step="0.01"
                     required
                     value={productFormData.unitPrice}
-                    onChange={(e) => setProductFormData({ ...productFormData, unitPrice: Number(e.target.value) })}
+                    onChange={(e) => setProductFormData({ ...productFormData, unitPrice: parseFloat(e.target.value) || 0 })}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                   />
                 </div>

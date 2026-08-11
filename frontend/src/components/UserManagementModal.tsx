@@ -23,9 +23,11 @@ interface UserManagementModalProps {
   onClose: () => void;
   users: User[];
   currentUser: User;
-  onAddUser: (user: Omit<User, 'id'>) => void;
+  onAddUser: (user: Omit<User, 'id'> & { password?: string }) => void;
   onUpdateUser: (id: string, updates: Partial<User>) => void;
   onSwitchUser: (user: User) => void;
+  onDeleteUser?: (id: string) => void;
+  onResetPassword?: (id: string, password?: string) => void;
 }
 
 export const UserManagementModal: React.FC<UserManagementModalProps> = ({
@@ -36,9 +38,12 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
   onAddUser,
   onUpdateUser,
   onSwitchUser,
+  onDeleteUser,
+  onResetPassword,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
 
   // Form State
   const [formData, setFormData] = useState<{
@@ -81,6 +86,7 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
     } else {
       onAddUser({
         ...formData,
+        password: password || 'Password123',
         avatar:
           formData.avatar ||
           `https://images.unsplash.com/photo-${1535713875002 + users.length * 1000}?w=150&auto=format&fit=crop&q=80`,
@@ -94,11 +100,13 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
       department: 'Sales & Business Development',
       avatar: '',
     });
+    setPassword('');
     setShowAddForm(false);
   };
 
   const startEdit = (u: User) => {
     setEditingUserId(u.id);
+    setPassword('');
     setFormData({
       name: u.name,
       email: u.email,
@@ -239,6 +247,51 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                   />
                 </div>
+
+                {!editingUserId ? (
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block text-slate-600 mb-1">Initial Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password (min 6 characters)"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                    />
+                  </div>
+                ) : (
+                  <div className="col-span-1 sm:col-span-2 border-t border-slate-200 pt-4 mt-2">
+                    <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center space-x-1.5">
+                      <Lock className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Security & Password Override</span>
+                    </h4>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="password"
+                        placeholder="Enter new override password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (password.length >= 6) {
+                            onResetPassword?.(editingUserId, password);
+                            setPassword('');
+                            alert('Password reset successfully!');
+                          } else {
+                            alert('Password must be at least 6 characters long');
+                          }
+                        }}
+                        className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-xl font-bold transition-all text-xs border border-purple-200"
+                      >
+                        Reset Password
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end space-x-2 pt-2">
@@ -336,6 +389,23 @@ export const UserManagementModal: React.FC<UserManagementModalProps> = ({
                               title="Edit user details"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete user ${u.name}?`)) {
+                                  onDeleteUser?.(u.id);
+                                }
+                              }}
+                              disabled={isSelf}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isSelf
+                                  ? 'text-slate-200 cursor-default'
+                                  : 'text-rose-600 hover:bg-rose-50 hover:text-rose-800'
+                              }`}
+                              title={isSelf ? 'Cannot delete yourself' : 'Delete user account'}
+                            >
+                              <UserX className="w-3.5 h-3.5" />
                             </button>
 
                             <button

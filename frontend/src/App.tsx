@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Customer, Product, SalesChallan, StockLog, User, DashboardStats, AuditLog, AuditModule } from './types';
-import { DEMO_USERS, INITIAL_AUDIT_LOGS } from './data/initialData';
+
 import { api } from './services/api';
 import { RoleBanner } from './components/RoleBanner';
 import { Header } from './components/Header';
@@ -15,13 +15,27 @@ import { ChallanInvoiceModal } from './components/ChallanInvoiceModal';
 import { ApiDocsModal } from './components/ApiDocsModal';
 import { LoginModal } from './components/LoginModal';
 import { UserManagementModal } from './components/UserManagementModal';
+import { LandingPage } from './components/LandingPage';
 
 export default function App() {
-  const [users, setUsers] = useState<User[]>(DEMO_USERS);
-  const [currentUser, setCurrentUser] = useState<User | null>(null); // Start unauthenticated to force login screen
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const token = localStorage.getItem('authToken');
+        if (token) api.setToken(token);
+        return parsed;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   // App Data State
   const [stats, setStats] = useState<DashboardStats>({
@@ -65,12 +79,20 @@ export default function App() {
       setProducts(prodRes.data);
       setStockLogs(logsRes.data);
       setChallans(challanRes.data);
-    } catch (err) {
+
+      if (currentUser && currentUser.role === 'Admin') {
+        const usersRes = await api.getUsers();
+        setUsers(usersRes);
+      }
+    } catch (err: any) {
       console.error('Error loading ERP data:', err);
+      if (err.message && (err.message.includes('token') || err.message.includes('Auth') || err.message.includes('session') || err.message.includes('401') || err.message.includes('unauthorized'))) {
+        handleLogout();
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     loadAppData();
@@ -80,11 +102,21 @@ export default function App() {
   const handleLogin = async (email: string, password?: string, role?: string) => {
     const res = await api.login(email, password, role);
     setCurrentUser(res.user);
+    localStorage.setItem('currentUser', JSON.stringify(res.user));
     setShowLoginModal(false);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+    api.setToken(null);
+    setShowLoginModal(true);
   };
 
   const handleSwitchUser = (user: User) => {
     setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
     // Ensure activeTab is permissible for the new user role
     if (user.role === 'Sales' && (activeTab === 'inventory' || activeTab === 'stock-logs')) {
       setActiveTab('dashboard');
@@ -125,37 +157,75 @@ export default function App() {
     [currentUser]
   );
 
-  const handleAddUser = (newUserData: Omit<User, 'id'>) => {
-    const newUser: User = {
-      ...newUserData,
-      id: `usr_${Date.now()}`,
-    };
-    setUsers((prev) => [...prev, newUser]);
-    logAuditEvent(
-      'User Management',
-      'USER_CREATE',
-      newUser.id,
-      newUser.name,
-      `Created user account with role '${newUser.role}' in '${newUser.department || 'General'}' department.`,
-      'WARNING'
-    );
+  const handleAddUser = async (newUserData: Omit<User, 'id'> & { password?: string }) => {
+    try {
+      const password = newUserData.password || 'Password123';
+      const created = await api.createUser({ ...newUserData, password });
+      await loadAppData();
+      logAuditEvent(
+        'User Management',
+        'USER_CREATE',
+        created.id,
+        created.name,
+        `Created user account with role '${created.role}' in '${created.department || 'General'}' department.`,
+        'WARNING'
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to create user');
+    }
   };
 
-  const handleUpdateUser = (id: string, updates: Partial<User>) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, ...updates } : u))
-    );
-    if (currentUser?.id === id) {
-      setCurrentUser((prev) => (prev ? { ...prev, ...updates } : null));
+  const handleUpdateUser = async (id: string, updates: Partial<User>) => {
+    try {
+      const updated = await api.updateUser(id, updates);
+      await loadAppData();
+      if (currentUser?.id === id) {
+        setCurrentUser(updated);
+      }
+      logAuditEvent(
+        'User Management',
+        'USER_ROLE_ASSIGNMENT',
+        id,
+        updates.name || 'User Account',
+        `Updated user privileges/role to '${updates.role || 'Modified'}'.`,
+        'WARNING'
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to update user');
     }
-    logAuditEvent(
-      'User Management',
-      'USER_ROLE_ASSIGNMENT',
-      id,
-      updates.name || 'User Account',
-      `Updated user privileges/role to '${updates.role || 'Modified'}'.`,
-      'WARNING'
-    );
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    try {
+      await api.deleteUser(id);
+      await loadAppData();
+      logAuditEvent(
+        'User Management',
+        'USER_DELETE',
+        id,
+        'User Account',
+        `Deleted user account.`,
+        'WARNING'
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete user');
+    }
+  };
+
+  const handleResetPassword = async (id: string, password?: string) => {
+    try {
+      await api.resetUserPassword(id, password);
+      logAuditEvent(
+        'User Management',
+        'USER_PASSWORD_RESET',
+        id,
+        'User Account',
+        `Reset user account password.`,
+        'WARNING'
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to reset password');
+    }
   };
 
   const handleAddCustomer = async (data: Partial<Customer>) => {
@@ -197,6 +267,21 @@ export default function App() {
       updated.businessName || updated.name,
       `Advanced deal pipeline stage to '${pipelineStage}' (Deal Value: ₹${(updated.dealValue || 0).toLocaleString()}).`,
       'INFO'
+    );
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    // Find customer for audit logging before deleting
+    const customer = customers.find(c => c.id === id);
+    await api.deleteCustomer(id);
+    await loadAppData();
+    logAuditEvent(
+      'CRM',
+      'CUSTOMER_DELETE',
+      id,
+      customer ? (customer.businessName || customer.name) : 'Unknown Customer',
+      `Deleted customer record successfully.`,
+      'WARN'
     );
   };
 
@@ -250,6 +335,21 @@ export default function App() {
       updated.name,
       `Updated product specs (SKU: ${updated.sku}, Location: ${updated.location}).`,
       'INFO'
+    );
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    // Find product for audit logging before deleting
+    const product = products.find(p => p.id === id);
+    await api.deleteProduct(id);
+    await loadAppData();
+    logAuditEvent(
+      'Inventory',
+      'PRODUCT_DELETE',
+      id,
+      product ? product.name : 'Unknown Product',
+      `Deleted product record (SKU: ${product ? product.sku : 'N/A'}) successfully.`,
+      'WARN'
     );
   };
 
@@ -316,20 +416,21 @@ export default function App() {
   const lowStockProducts = products.filter((p) => p.currentStock <= p.minStockAlert);
   const upcomingFollowUps = customers.filter((c) => c.nextFollowUpDate && c.status !== 'Inactive');
 
-  if (!currentUser || showLoginModal) {
-    return <LoginModal demoUsers={users} onLogin={handleLogin} />;
+  const [showLandingPage, setShowLandingPage] = useState(!currentUser);
+
+  if (!currentUser) {
+    if (showLandingPage) {
+      return <LandingPage onEnterApp={() => setShowLandingPage(false)} />;
+    }
+    return <LoginModal onLogin={handleLogin} />;
+  }
+
+  if (showLoginModal) {
+    return <LoginModal onLogin={handleLogin} />;
   }
 
   return (
     <div className="min-h-screen bg-[#f0f2f8] flex flex-col font-sans text-slate-800 antialiased selection:bg-purple-200 selection:text-purple-900">
-      {/* Top Demo Role Banner */}
-      <RoleBanner
-        currentUser={currentUser}
-        onSwitchUser={handleSwitchUser}
-        allUsers={users}
-        onOpenUserManagement={() => setShowUserManagementModal(true)}
-      />
-
       {/* Main Header */}
       <Header
         currentUser={currentUser}
@@ -348,7 +449,7 @@ export default function App() {
         }}
         onOpenApiDocs={() => setActiveTab('api-docs')}
         onOpenUserManagement={() => setShowUserManagementModal(true)}
-        onLogout={() => setShowLoginModal(true)}
+        onLogout={handleLogout}
         onNavigateToLowStock={() => {
           setInitialLowStockFilter(true);
           setActiveTab('inventory');
@@ -381,6 +482,7 @@ export default function App() {
           onOpenUserManagement={() => setShowUserManagementModal(true)}
           crmViewMode={crmViewMode}
           onCrmViewModeChange={setCrmViewMode}
+          onLogout={handleLogout}
         />
 
         {/* Content Body */}
@@ -408,6 +510,7 @@ export default function App() {
                   }}
                   onViewChallanDetail={(c) => setSelectedChallanForInvoice(c)}
                   onViewCustomerDetail={(c) => setSelectedCustomerForDetail(c)}
+                  onAddStockMovement={handleAddStockMovement}
                 />
               )}
 
@@ -427,6 +530,7 @@ export default function App() {
                   }}
                   viewMode={crmViewMode}
                   onViewModeChange={setCrmViewMode}
+                  onDeleteCustomer={handleDeleteCustomer}
                 />
               )}
 
@@ -438,6 +542,7 @@ export default function App() {
                   onUpdateProduct={handleUpdateProduct}
                   onAddStockMovement={handleAddStockMovement}
                   initialLowStockFilter={initialLowStockFilter}
+                  onDeleteProduct={handleDeleteProduct}
                 />
               )}
 
@@ -482,6 +587,8 @@ export default function App() {
         onAddUser={handleAddUser}
         onUpdateUser={handleUpdateUser}
         onSwitchUser={handleSwitchUser}
+        onDeleteUser={handleDeleteUser}
+        onResetPassword={handleResetPassword}
       />
     </div>
   );

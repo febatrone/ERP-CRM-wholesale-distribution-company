@@ -64,16 +64,25 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(true);
+  const [time, setTime] = useState(new Date());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Formatted date string matching Insight Scope style "4:28 pm, 12 Sep., Mon"
-  const formattedDate = new Date().toLocaleDateString('en-US', {
+  const formattedDate = time.toLocaleDateString('en-US', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   });
-  const formattedTime = new Date().toLocaleTimeString('en-US', {
+  const formattedTime = time.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
+    second: '2-digit',
     hour12: true,
   }).toLowerCase();
 
@@ -150,11 +159,22 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Bar: Welcome Greeting, Search, AI Assistant & Actions */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Left Welcome Date Banner */}
-        <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center space-x-3 shrink-0 py-1">
           <div>
-            <p className="text-xs font-semibold text-slate-500 leading-tight">Welcome back!</p>
-            <p className="text-sm font-extrabold text-slate-900 tracking-tight">
-              It's <span className="text-purple-700">{formattedTime}</span>, {formattedDate}
+            <div className="flex items-center space-x-2.5">
+              <p className="text-sm font-bold text-slate-500 tracking-tight">Welcome back!</p>
+              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-2xs ${
+                currentUser.role === 'Admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                currentUser.role === 'Sales' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                currentUser.role === 'Warehouse' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
+                ✨ {currentUser.role} Dashboard
+              </span>
+            </div>
+            <p className="text-xl font-black text-slate-950 tracking-tight mt-1 flex items-baseline space-x-2">
+              <span className="text-purple-600 font-black">{formattedTime}</span>
+              <span className="text-xs font-bold text-slate-400">• {formattedDate}</span>
             </p>
           </div>
         </div>
@@ -332,15 +352,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-purple-900">Ai assistant</span>
           </button>
 
-          {/* REST API & Postman Button */}
-          <button
-            id="btn-header-api-docs"
-            onClick={onOpenApiDocs}
-            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors"
-            title="REST API Documentation & Postman Export"
-          >
-            <FileCode className="w-4 h-4 text-slate-600" />
-          </button>
+
 
           {/* Admin User Account Management Button */}
           {currentUser.role === 'Admin' && onOpenUserManagement && (
@@ -427,15 +439,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* User Logout Button */}
-          <button
-            id="btn-logout"
-            onClick={onLogout}
-            className="p-2 text-slate-400 hover:text-pink-600 hover:bg-pink-50 rounded-xl transition-colors"
-            title="Sign Out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </div>
 

@@ -74,12 +74,12 @@ export const ChallanInvoiceModal: React.FC<ChallanInvoiceModalProps> = ({ challa
             <div>
               <div className="flex items-center space-x-2">
                 <Building2 className="w-6 h-6 text-indigo-600" />
-                <h2 className="text-xl font-bold tracking-tight text-slate-900">OmniFlow Wholesale Ltd.</h2>
+                <h2 className="text-xl font-bold tracking-tight text-slate-900">Insight Scope Inc. Ltd.</h2>
               </div>
               <p className="text-xs text-slate-500 mt-1">Plot 108, Industrial Logistic Park, Sector 18</p>
               <p className="text-xs text-slate-500">GSTIN: 27AABCO9981Z1 | Phone: +91 22 4000 8800</p>
             </div>
-
+ 
             <div className="text-right">
               <h3 className="text-lg font-black uppercase text-indigo-900">DELIVERY CHALLAN / TAX INVOICE</h3>
               <p className="text-sm font-mono font-bold text-slate-800 mt-1">{challan.challanNumber}</p>
@@ -88,7 +88,7 @@ export const ChallanInvoiceModal: React.FC<ChallanInvoiceModalProps> = ({ challa
               </p>
             </div>
           </div>
-
+ 
           {/* Customer & Shipping Info */}
           <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
             <div>
@@ -101,14 +101,14 @@ export const ChallanInvoiceModal: React.FC<ChallanInvoiceModalProps> = ({ challa
                 </p>
               )}
             </div>
-
+ 
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Delivery Address</span>
               <p className="text-slate-700 font-medium mt-1 leading-relaxed">{challan.customerAddress}</p>
               <p className="text-slate-500 mt-2">Issued By: {challan.createdBy}</p>
             </div>
           </div>
-
+ 
           {/* Line Items Table */}
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -134,14 +134,14 @@ export const ChallanInvoiceModal: React.FC<ChallanInvoiceModalProps> = ({ challa
               ))}
             </tbody>
           </table>
-
+ 
           {/* Totals & Notes */}
           <div className="flex justify-between items-start border-t-2 border-slate-800 pt-4 text-xs">
             <div className="max-w-md space-y-1">
               <span className="font-bold text-slate-700">Terms & Dispatch Notes:</span>
               <p className="text-slate-500 italic">{challan.notes || 'Goods delivered in sound condition. Subject to Mumbai Jurisdiction.'}</p>
             </div>
-
+ 
             <div className="w-56 space-y-2 text-right">
               <div className="flex justify-between py-1 border-b border-slate-200 text-slate-600">
                 <span>Total Quantity:</span>
@@ -153,14 +153,14 @@ export const ChallanInvoiceModal: React.FC<ChallanInvoiceModalProps> = ({ challa
               </div>
             </div>
           </div>
-
+ 
           {/* Signatures */}
           <div className="grid grid-cols-2 gap-8 pt-8 text-xs text-slate-500">
             <div className="border-t border-slate-300 pt-2 text-center">
               <span>Customer / Driver Receiver Signature</span>
             </div>
             <div className="border-t border-slate-300 pt-2 text-center">
-              <span>Authorized Signatory (OmniFlow Ltd)</span>
+              <span>Authorized Signatory (Insight Scope Inc. Ltd)</span>
             </div>
           </div>
         </div>

@@ -134,7 +134,7 @@ router.post("/", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req:
 });
 
 // PUT update challan status (Draft -> Confirmed -> Cancelled)
-router.put("/:id/status", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req: AuthenticatedRequest, res, next) => {
+router.put("/:id/status", authMiddleware, roleMiddleware(["ADMIN", "SALES", "ACCOUNTS"]), async (req: AuthenticatedRequest, res, next) => {
   try {
     const challanId = req.params.id as string;
     const { status } = req.body;
@@ -366,7 +366,11 @@ router.get("/", authMiddleware, async (req, res, next) => {
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
-        include: { customer: { select: { name: true, businessName: true } } }
+        include: {
+          customer: true,
+          items: true,
+          createdBy: { select: { name: true } }
+        }
       }),
       prisma.challan.count()
     ]);

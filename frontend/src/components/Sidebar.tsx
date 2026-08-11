@@ -15,6 +15,7 @@ import {
   Briefcase,
   ChevronDown,
   UserCheck,
+  LogOut,
 } from 'lucide-react';
 import { UserRole, User } from '../types';
 
@@ -30,6 +31,7 @@ interface SidebarProps {
   onOpenUserManagement?: () => void;
   crmViewMode?: 'kanban' | 'table' | 'analytics';
   onCrmViewModeChange?: (mode: 'kanban' | 'table' | 'analytics') => void;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -42,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUserManagement,
   crmViewMode = 'kanban',
   onCrmViewModeChange,
+  onLogout,
 }) => {
   const mainNavItems = [
     {
@@ -90,18 +93,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: ShieldAlert,
       roles: ['Admin', 'Accounts'] as UserRole[],
     },
-    {
-      id: 'api-docs' as ActiveTab,
-      label: 'API & Integrations',
-      icon: Code2,
-      roles: ['Admin', 'Sales', 'Warehouse', 'Accounts'] as UserRole[],
-    },
   ];
 
   return (
     <aside
       id="main-sidebar"
-      className="w-64 bg-white/90 backdrop-blur-md text-slate-800 min-h-[calc(100vh-2rem)] my-2 ml-2 rounded-3xl flex flex-col border border-slate-200/80 shadow-[0_4px_25px_rgba(0,0,0,0.03)] select-none shrink-0 z-10 transition-all"
+      className="w-full md:w-64 bg-white/90 backdrop-blur-md text-slate-800 h-auto md:h-[calc(100vh-3.5rem)] md:max-h-[calc(100vh-3.5rem)] md:sticky md:top-5 my-2 ml-2 rounded-3xl flex flex-col border border-slate-200/80 shadow-[0_4px_25px_rgba(0,0,0,0.03)] select-none shrink-0 z-10 transition-all"
     >
       {/* Brand Header */}
       <div className="p-5 flex items-center justify-between border-b border-slate-100">
@@ -122,17 +119,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Enterprise ERP & CRM</p>
           </div>
         </div>
-
-        <button
-          className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-          title="Collapse Sidebar"
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
       </div>
 
       {/* Navigation Sections */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
         {/* MAIN CATEGORY */}
         <div>
           <p className="px-3 mb-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Main</p>
@@ -148,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     id={`nav-item-${item.id}`}
                     onClick={() => isPermitted && onTabChange(item.id)}
                     disabled={!isPermitted}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
                       isActive
                         ? 'bg-purple-100/80 text-purple-800 shadow-xs'
                         : isPermitted
@@ -156,8 +146,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'text-slate-400 cursor-not-allowed opacity-50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-purple-700' : 'text-slate-500'}`} />
+                    <div className="flex items-center space-x-3.5">
+                      <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-purple-700' : 'text-slate-500'}`} />
                       <span>{item.label}</span>
                     </div>
 
@@ -221,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               id="sidebar-user-management-btn"
               onClick={() => onOpenUserManagement && onOpenUserManagement()}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/80 rounded-2xl text-xs font-bold transition-all shadow-2xs"
+              className="w-full flex items-center justify-between px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/80 rounded-2xl text-xs font-bold transition-all shadow-2xs"
             >
               <div className="flex items-center space-x-3">
                 <UserCheck className="w-4 h-4 text-purple-700" />
@@ -262,6 +252,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Logout button clearly visible above user profile */}
+      {onLogout && (
+        <div className="px-3">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center justify-center space-x-2 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 rounded-2xl text-xs font-bold transition-all border border-rose-200/60 shadow-2xs"
+            title="Sign Out of Portal"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out / Log Out</span>
+          </button>
+        </div>
+      )}
 
       {/* User Profile Switcher Footer */}
       <div className="p-3 m-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">

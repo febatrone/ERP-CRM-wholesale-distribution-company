@@ -1,132 +1,170 @@
 import React, { useState } from 'react';
-import { User, UserRole } from '../types';
-import { Building2, Shield, Users, Warehouse, Calculator, KeyRound, ArrowRight } from 'lucide-react';
+
+import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 interface LoginModalProps {
-  demoUsers: User[];
-  onLogin: (email: string, password?: string, role?: string) => Promise<void>;
+  onLogin: (email: string, password?: string) => Promise<void>;
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ demoUsers, onLogin }) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>('Sales');
-  const [emailInput, setEmailInput] = useState('sales@company.com');
-  const [passwordInput, setPasswordInput] = useState('Password123');
+export const LoginModal: React.FC<LoginModalProps> = ({ onLogin }) => {
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  const handleRolePresetSelect = (u: User) => {
-    setSelectedRole(u.role);
-    setEmailInput(u.email);
-    setPasswordInput('Password123');
-    setErrorMsg('');
-  };
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setIsSubmitting(true);
     try {
-      await onLogin(emailInput, passwordInput, selectedRole);
+      await onLogin(emailInput, passwordInput);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Login failed. Check email or select role preset.');
+      setErrorMsg(err.message || 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const roleIcons: Record<UserRole, React.ReactNode> = {
-    Admin: <Shield className="w-5 h-5 text-purple-600" />,
-    Sales: <Users className="w-5 h-5 text-blue-600" />,
-    Warehouse: <Warehouse className="w-5 h-5 text-amber-600" />,
-    Accounts: <Calculator className="w-5 h-5 text-emerald-600" />,
-  };
-
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl border border-slate-200 space-y-6">
-        {/* Logo & Header */}
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-indigo-600 rounded-xl mx-auto flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <Building2 className="w-7 h-7" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">OmniFlow Operations</h2>
-          <p className="text-xs text-slate-500">Mini ERP & CRM Portal — Select Role to Enter</p>
-        </div>
+    <div className="fixed inset-0 bg-[#0f111a] z-50 flex items-center justify-center p-4 select-none overflow-hidden">
+      {/* Background Decorative Blurred Spheres for Glassmorphism Context */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#7c3aed]/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#4f46e5]/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[30%] left-[40%] w-[30%] h-[30%] bg-[#db2777]/10 rounded-full blur-[140px] pointer-events-none" />
 
-        {/* Quick Demo Credentials Presets */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-            <span>Select Demo Role Preset:</span>
-            <span className="text-[10px] text-indigo-600 font-normal">Click to auto-fill</span>
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {demoUsers.map((u) => {
-              const isSelected = selectedRole === u.role;
-              return (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => handleRolePresetSelect(u)}
-                  className={`p-2.5 rounded-xl border text-left transition-all flex items-center space-x-2.5 ${
-                    isSelected
-                      ? 'bg-indigo-50 border-indigo-500 shadow-sm ring-1 ring-indigo-500/20'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="shrink-0">{roleIcons[u.role]}</div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">{u.role}</p>
-                    <p className="text-[10px] text-slate-500 truncate max-w-[110px]">{u.email}</p>
+      {/* Main Glassmorphic Card */}
+      <div className="bg-white/85 backdrop-blur-xl rounded-[32px] max-w-5xl w-full h-[620px] shadow-[0_25px_60px_rgba(0,0,0,0.25)] border border-white/20 overflow-hidden flex flex-col md:flex-row relative z-10">
+        {/* Left Side: Form */}
+        <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-between h-full relative z-20">
+          {/* Brand Header */}
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
+              <div className="grid grid-cols-2 gap-1 w-3.5 h-3.5">
+                <div className="bg-white rounded-xs"></div>
+                <div className="bg-purple-400 rounded-xs"></div>
+                <div className="bg-purple-400 rounded-xs"></div>
+                <div className="bg-white rounded-xs"></div>
+              </div>
+            </div>
+            <div>
+              <span className="font-extrabold text-slate-900 text-sm tracking-tight leading-none block">
+                Insight Scope
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold mt-0.5 block">Enterprise Operations</span>
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <div className="space-y-6 my-auto pt-8">
+            <div>
+              <h2 className="text-3.5xl font-black text-slate-950 tracking-tight leading-none">
+                Hello,
+              </h2>
+              <h2 className="text-3.5xl font-black text-slate-950 tracking-tight leading-none mt-1">
+                Welcome Back
+              </h2>
+              <p className="text-xs text-slate-400 font-semibold mt-2">
+                Hey, welcome back to your special place
+              </p>
+            </div>
+
+            {errorMsg && (
+              <div className="p-3 bg-red-50/80 border border-red-200/60 text-red-700 rounded-2xl text-[11px] font-bold backdrop-blur-xs">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email Input */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
                   </div>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter email address"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3.5 bg-white/70 border border-slate-200/60 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-500/80 transition-all text-slate-800 placeholder-slate-400"
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Enter password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    className="w-full pl-10 pr-12 py-3.5 bg-white/70 border border-slate-200/60 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-600/20 focus:border-purple-500/80 transition-all text-slate-800 placeholder-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 px-1">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded text-purple-600 border-slate-300 focus:ring-purple-500"
+                  />
+                  <span>Remember me</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => alert('Please contact system administrator to reset password.')}
+                  className="text-[#7c3aed] hover:text-[#6d28d9] hover:underline"
+                >
+                  Forgot Password?
                 </button>
-              );
-            })}
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-extrabold rounded-2xl shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all flex items-center justify-center space-x-2 text-xs"
+              >
+                <span>{isSubmitting ? 'Signing In...' : 'Sign In'}</span>
+                {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer Info */}
+          <div className="text-[10px] text-slate-400 font-semibold text-center border-t border-slate-200/40 pt-4 mt-auto">
+            JWT-secured identity validation enabled
           </div>
         </div>
 
-        {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium">
-            {errorMsg}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-xs"
-          >
-            <span>{isSubmitting ? 'Authenticating...' : `Enter Portal as ${selectedRole}`}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
-
-        <p className="text-[11px] text-slate-400 text-center leading-normal">
-          JWT-based role authentication enabled for <strong className="text-slate-600">Admin</strong>, <strong className="text-slate-600">Sales</strong>, <strong className="text-slate-600">Warehouse</strong>, & <strong className="text-slate-600">Accounts</strong>.
-        </p>
+        {/* Right Side: Mockup Illustration */}
+        <div className="hidden md:block w-1/2 relative bg-[#8b5cf6]/10">
+          <div
+            className="absolute inset-0 bg-cover bg-center rounded-r-[30px]"
+            style={{
+              backgroundImage: 'url(/login_illustration.png)',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

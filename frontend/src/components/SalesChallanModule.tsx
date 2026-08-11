@@ -319,7 +319,7 @@ export const SalesChallanModule: React.FC<SalesChallanModuleProps> = ({
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right space-x-2">
-                    {c.status === 'Draft' && (userRole === 'Admin' || userRole === 'Sales') && (
+                    {c.status === 'Draft' && (userRole === 'Admin' || userRole === 'Sales' || userRole === 'Accounts') && (
                       <button
                         onClick={async () => {
                           try {
