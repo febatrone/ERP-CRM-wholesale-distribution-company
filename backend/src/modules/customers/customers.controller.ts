@@ -254,7 +254,7 @@ router.post("/:id/followups", authMiddleware, roleMiddleware(["ADMIN", "SALES"])
         data: {
           customerId,
           notes: note.trim(),
-          createdBy: req.user?.name || "System"
+          createdBy: req.user?.email || "System"
         }
       });
 
