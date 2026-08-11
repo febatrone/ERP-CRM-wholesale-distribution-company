@@ -24,18 +24,33 @@ export const api = {
     
     // Auto unpack Express wrapper { success: true, data: [...] } envelopes
     if (res.ok) {
-      const clone = res.clone();
       try {
-        const body = await clone.json();
-        if (body && typeof body === 'object' && 'data' in body && !('pagination' in body)) {
-          // If it is already a wrapper response but double wrapped or direct array mapping
-          res.json = async () => body;
-        } else if (body && typeof body === 'object' && ('customer' in body || 'product' in body || 'challan' in body || 'invoice' in body)) {
-          const payloadKey = Object.keys(body).find(k => k !== 'success');
-          if (payloadKey) {
-            res.json = async () => body[payloadKey];
+        const body = await res.json();
+        let payload = body;
+        
+        if (body && typeof body === 'object') {
+          if ('data' in body && !('pagination' in body)) {
+            payload = body.data;
+          } else if ('customer' in body) {
+            payload = body.customer;
+          } else if ('product' in body) {
+            payload = body.product;
+          } else if ('challan' in body) {
+            payload = body.challan;
+          } else if ('invoice' in body) {
+            payload = body.invoice;
+          } else if ('stockLog' in body) {
+            payload = body.stockLog;
           }
         }
+        
+        // Return a mocked Response interface
+        return {
+          ok: true,
+          status: res.status,
+          json: async () => payload,
+          text: async () => JSON.stringify(payload)
+        } as any;
       } catch (e) {
         // Fallback silently if not JSON
       }
