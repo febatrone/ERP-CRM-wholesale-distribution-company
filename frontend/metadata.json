@@ -1,0 +1,6 @@
+{
+  "name": "Mini ERP & CRM Operations Portal",
+  "description": "Full-stack Mini ERP and CRM portal with role-based access control, customer CRM, stock & warehouse management, automatic stock deduction sales challans, and REST APIs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
