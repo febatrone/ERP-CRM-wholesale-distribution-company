@@ -134,36 +134,55 @@ router.post("/:id/stock", authMiddleware, roleMiddleware(["ADMIN", "WAREHOUSE"])
 router.get("/", authMiddleware, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const search = (req.query.search as string) || "";
+    const limit = parseInt(req.query.limit as string) || 50;
+    const search = (req.query.q as string) || "";
+    const category = (req.query.category as string) || "";
+    const lowStock = req.query.lowStock === "true";
     const skip = (page - 1) * limit;
 
-    const queryConditions = search ? {
-      OR: [
-        { name: { contains: search, mode: "insensitive" as const } },
-        { sku: { contains: search, mode: "insensitive" as const } }
-      ]
-    } : {};
+    const queryConditions: any = { AND: [] };
 
-    const [products, total] = await Promise.all([
+    if (search) {
+      queryConditions.AND.push({
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { sku: { contains: search, mode: "insensitive" as const } }
+        ]
+      });
+    }
+
+    if (category && category !== "all") {
+      queryConditions.AND.push({ category });
+    }
+
+    const where = queryConditions.AND.length > 0 ? queryConditions : {};
+
+    const [dbProducts, total] = await Promise.all([
       prisma.product.findMany({
-        where: queryConditions,
+        where,
         skip,
         take: limit,
         orderBy: { name: "asc" }
       }),
-      prisma.product.count({ where: queryConditions })
+      prisma.product.count({ where })
     ]);
+
+    // Apply low stock threshold filtering post-query if requested
+    let filteredProducts = dbProducts;
+    if (lowStock) {
+      filteredProducts = dbProducts.filter(p => p.currentStock <= p.minStockQty);
+    }
+
+    // Map keys to match frontend expectations (minStockAlert camelCase)
+    const frontendMapped = filteredProducts.map((p: any) => ({
+      ...p,
+      minStockAlert: p.minStockQty
+    }));
 
     res.status(200).json({
       success: true,
-      data: products,
-      pagination: {
-        total,
-        pages: Math.ceil(total / limit),
-        page,
-        limit
-      }
+      data: frontendMapped,
+      total: total
     });
   } catch (error) {
     next(error);
@@ -195,7 +214,11 @@ router.get("/:id", authMiddleware, async (req, res, next) => {
     if (!product) {
       return next(new AppError("Product not found", 404));
     }
-    res.status(200).json({ success: true, product });
+    const frontendMapped = {
+      ...product,
+      minStockAlert: product.minStockQty
+    };
+    res.status(200).json({ success: true, product: frontendMapped });
   } catch (error) {
     next(error);
   }

@@ -17,6 +17,8 @@ import productRouter from "./modules/products/products.controller";
 import challanRouter from "./modules/challans/challans.controller";
 import invoiceRouter from "./modules/invoices/invoices.controller";
 import uploadRouter from "./modules/uploads/uploads.controller";
+import stockLogsRouter from "./modules/stock-logs/stock-logs.controller";
+import dashboardRouter from "./modules/dashboard/dashboard.controller";
 
 // API Endpoints Mapping
 app.use("/api/auth", authRouter);
@@ -25,6 +27,8 @@ app.use("/api/products", productRouter);
 app.use("/api/challans", challanRouter);
 app.use("/api/invoices", invoiceRouter);
 app.use("/api/uploads", uploadRouter);
+app.use("/api/stock-logs", stockLogsRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 // Health check status route
 app.get("/health", (req, res) => {
