@@ -18,7 +18,7 @@ import { UserManagementModal } from './components/UserManagementModal';
 
 export default function App() {
   const [users, setUsers] = useState<User[]>(DEMO_USERS);
-  const [currentUser, setCurrentUser] = useState<User | null>(DEMO_USERS[1]); // Default to Sales user
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // Start unauthenticated to force login screen
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [isLoading, setIsLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
@@ -77,8 +77,8 @@ export default function App() {
   }, [loadAppData]);
 
   // Handlers
-  const handleLogin = async (email: string, role?: string) => {
-    const res = await api.login(email, role);
+  const handleLogin = async (email: string, password?: string, role?: string) => {
+    const res = await api.login(email, password, role);
     setCurrentUser(res.user);
     setShowLoginModal(false);
   };

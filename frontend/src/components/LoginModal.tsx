@@ -4,20 +4,20 @@ import { Building2, Shield, Users, Warehouse, Calculator, KeyRound, ArrowRight }
 
 interface LoginModalProps {
   demoUsers: User[];
-  onLogin: (email: string, role?: string) => Promise<void>;
+  onLogin: (email: string, password?: string, role?: string) => Promise<void>;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ demoUsers, onLogin }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>('Sales');
-  const [emailInput, setEmailInput] = useState('sales@omniflow.com');
-  const [passwordInput, setPasswordInput] = useState('sales123');
+  const [emailInput, setEmailInput] = useState('sales@company.com');
+  const [passwordInput, setPasswordInput] = useState('Password123');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleRolePresetSelect = (u: User) => {
     setSelectedRole(u.role);
     setEmailInput(u.email);
-    setPasswordInput(`${u.role.toLowerCase()}123`);
+    setPasswordInput('Password123');
     setErrorMsg('');
   };
 
@@ -26,7 +26,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ demoUsers, onLogin }) =>
     setErrorMsg('');
     setIsSubmitting(true);
     try {
-      await onLogin(emailInput, selectedRole);
+      await onLogin(emailInput, passwordInput, selectedRole);
     } catch (err: any) {
       setErrorMsg(err.message || 'Login failed. Check email or select role preset.');
     } finally {

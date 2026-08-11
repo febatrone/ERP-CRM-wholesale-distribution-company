@@ -2,11 +2,11 @@ import { Customer, Product, SalesChallan, StockLog, User, DashboardStats } from 
 
 export const api = {
   // Auth
-  async login(email: string, role?: string): Promise<{ user: User; token: string }> {
+  async login(email: string, password?: string, role?: string): Promise<{ user: User; token: string }> {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, role }),
+      body: JSON.stringify({ email, password, role }),
     });
     if (!res.ok) {
       const err = await res.json();
