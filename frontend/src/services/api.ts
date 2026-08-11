@@ -1,6 +1,29 @@
-import { Customer, Product, SalesChallan, StockLog, User, DashboardStats } from '../types';
+let authToken: string | null = null;
 
 export const api = {
+  // Set auth token
+  setToken(token: string | null) {
+    authToken = token;
+  },
+
+  // Helper request wrapper
+  async fetchWithAuth(url: string, options: RequestInit = {}) {
+    const headers = {
+      ...(options.headers || {}),
+      'Content-Type': 'application/json',
+    } as any;
+
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const res = await fetch(url, {
+      ...options,
+      headers
+    });
+    return res;
+  },
+
   // Auth
   async login(email: string, password?: string, role?: string): Promise<{ user: User; token: string }> {
     const res = await fetch('/api/auth/login', {
@@ -12,12 +35,16 @@ export const api = {
       const err = await res.json();
       throw new Error(err.error || 'Login failed');
     }
-    return res.json();
+    const data = await res.json();
+    if (data.token) {
+      this.setToken(data.token);
+    }
+    return data;
   },
 
   // Dashboard Stats
   async getDashboardStats(): Promise<DashboardStats> {
-    const res = await fetch('/api/dashboard/stats');
+    const res = await this.fetchWithAuth('/api/dashboard/stats');
     if (!res.ok) throw new Error('Failed to fetch dashboard stats');
     return res.json();
   },
@@ -29,21 +56,20 @@ export const api = {
     if (status && status !== 'all') params.append('status', status);
     if (type && type !== 'all') params.append('type', type);
 
-    const res = await fetch(`/api/customers?${params.toString()}`);
+    const res = await this.fetchWithAuth(`/api/customers?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch customers');
     return res.json();
   },
 
   async getCustomerById(id: string): Promise<Customer> {
-    const res = await fetch(`/api/customers/${id}`);
+    const res = await this.fetchWithAuth(`/api/customers/${id}`);
     if (!res.ok) throw new Error('Customer not found');
     return res.json();
   },
 
   async createCustomer(customerData: Partial<Customer>): Promise<Customer> {
-    const res = await fetch('/api/customers', {
+    const res = await this.fetchWithAuth('/api/customers', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customerData),
     });
     if (!res.ok) {
@@ -54,9 +80,8 @@ export const api = {
   },
 
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<Customer> {
-    const res = await fetch(`/api/customers/${id}`, {
+    const res = await this.fetchWithAuth(`/api/customers/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customerData),
     });
     if (!res.ok) {
@@ -67,9 +92,8 @@ export const api = {
   },
 
   async updateCustomerStage(id: string, pipelineStage: string, updatedBy?: string): Promise<Customer> {
-    const res = await fetch(`/api/customers/${id}/stage`, {
+    const res = await this.fetchWithAuth(`/api/customers/${id}/stage`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pipelineStage, updatedBy }),
     });
     if (!res.ok) {
@@ -87,9 +111,8 @@ export const api = {
     activityType?: string,
     priority?: string
   ): Promise<Customer> {
-    const res = await fetch(`/api/customers/${customerId}/followups`, {
+    const res = await this.fetchWithAuth(`/api/customers/${customerId}/followups`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note, date, createdBy, activityType, priority }),
     });
     if (!res.ok) {
@@ -107,7 +130,7 @@ export const api = {
     winRate: number;
     totalCustomers: number;
   }> {
-    const res = await fetch('/api/crm/analytics');
+    const res = await this.fetchWithAuth('/api/crm/analytics');
     if (!res.ok) throw new Error('Failed to fetch CRM analytics');
     return res.json();
   },
@@ -119,15 +142,14 @@ export const api = {
     if (category && category !== 'all') params.append('category', category);
     if (lowStock) params.append('lowStock', 'true');
 
-    const res = await fetch(`/api/products?${params.toString()}`);
+    const res = await this.fetchWithAuth(`/api/products?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch products');
     return res.json();
   },
 
   async createProduct(productData: Partial<Product>): Promise<Product> {
-    const res = await fetch('/api/products', {
+    const res = await this.fetchWithAuth('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(productData),
     });
     if (!res.ok) {
@@ -138,9 +160,8 @@ export const api = {
   },
 
   async updateProduct(id: string, productData: Partial<Product>): Promise<Product> {
-    const res = await fetch(`/api/products/${id}`, {
+    const res = await this.fetchWithAuth(`/api/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(productData),
     });
     if (!res.ok) {
@@ -156,7 +177,7 @@ export const api = {
     if (productId) params.append('productId', productId);
     if (type) params.append('type', type);
 
-    const res = await fetch(`/api/stock-logs?${params.toString()}`);
+    const res = await this.fetchWithAuth(`/api/stock-logs?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch stock movement logs');
     return res.json();
   },
@@ -168,9 +189,8 @@ export const api = {
     reason: string;
     createdBy?: string;
   }): Promise<{ stockLog: StockLog; updatedProduct: Product }> {
-    const res = await fetch('/api/stock-logs', {
+    const res = await this.fetchWithAuth('/api/stock-logs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -186,13 +206,13 @@ export const api = {
     if (query) params.append('q', query);
     if (status && status !== 'all') params.append('status', status);
 
-    const res = await fetch(`/api/challans?${params.toString()}`);
+    const res = await this.fetchWithAuth(`/api/challans?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch sales challans');
     return res.json();
   },
 
   async getChallanById(id: string): Promise<SalesChallan> {
-    const res = await fetch(`/api/challans/${id}`);
+    const res = await this.fetchWithAuth(`/api/challans/${id}`);
     if (!res.ok) throw new Error('Challan not found');
     return res.json();
   },
@@ -205,9 +225,8 @@ export const api = {
     createdBy?: string;
     createdById?: string;
   }): Promise<SalesChallan> {
-    const res = await fetch('/api/challans', {
+    const res = await this.fetchWithAuth('/api/challans', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
@@ -218,9 +237,8 @@ export const api = {
   },
 
   async updateChallanStatus(id: string, status: 'Draft' | 'Confirmed' | 'Cancelled', updatedBy?: string): Promise<SalesChallan> {
-    const res = await fetch(`/api/challans/${id}/status`, {
+    const res = await this.fetchWithAuth(`/api/challans/${id}/status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, updatedBy }),
     });
     if (!res.ok) {
