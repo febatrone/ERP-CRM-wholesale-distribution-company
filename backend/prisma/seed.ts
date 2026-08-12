@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -6,120 +6,92 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding database records...");
 
+  // Clean mock transactional data to start fresh
+  console.log("Cleaning up old transactional mock records...");
+  await prisma.invoice.deleteMany({});
+  await prisma.challanItem.deleteMany({});
+  await prisma.challan.deleteMany({});
+  await prisma.stockMovement.deleteMany({});
+  await prisma.customerFollowUp.deleteMany({});
+  await prisma.customer.deleteMany({});
+  await prisma.product.deleteMany({});
+
   // Seed Users
   const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash("Password123", salt);
+  const adminHash = await bcrypt.hash("Admin@12345", salt);
+  const salesHash = await bcrypt.hash("Sales@12345", salt);
+  const warehouseHash = await bcrypt.hash("Warehouse@12345", salt);
+  const accountsHash = await bcrypt.hash("Accounts@12345", salt);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@company.com" },
-    update: {},
+    where: { email: "admin@insightscope.com" },
+    update: {
+      email: "admin@insightscope.com",
+      password: adminHash,
+      name: "Super Administrator",
+      role: "ADMIN"
+    },
     create: {
-      email: "admin@company.com",
-      password: passwordHash,
+      email: "admin@insightscope.com",
+      password: adminHash,
       name: "Super Administrator",
       role: "ADMIN"
     }
   });
 
   const sales = await prisma.user.upsert({
-    where: { email: "sales@company.com" },
-    update: {},
+    where: { email: "sales@insightscope.com" },
+    update: {
+      email: "sales@insightscope.com",
+      password: salesHash,
+      name: "Sales Rep",
+      role: "SALES"
+    },
     create: {
-      email: "sales@company.com",
-      password: passwordHash,
+      email: "sales@insightscope.com",
+      password: salesHash,
       name: "Sales Rep",
       role: "SALES"
     }
   });
 
   const warehouse = await prisma.user.upsert({
-    where: { email: "warehouse@company.com" },
-    update: {},
+    where: { email: "warehouse@insightscope.com" },
+    update: {
+      email: "warehouse@insightscope.com",
+      password: warehouseHash,
+      name: "Warehouse Manager",
+      role: "WAREHOUSE"
+    },
     create: {
-      email: "warehouse@company.com",
-      password: passwordHash,
+      email: "warehouse@insightscope.com",
+      password: warehouseHash,
       name: "Warehouse Manager",
       role: "WAREHOUSE"
     }
   });
 
   const accounts = await prisma.user.upsert({
-    where: { email: "accounts@company.com" },
-    update: {},
+    where: { email: "accounts@insightscope.com" },
+    update: {
+      email: "accounts@insightscope.com",
+      password: accountsHash,
+      name: "Accountant Manager",
+      role: "ACCOUNTS"
+    },
     create: {
-      email: "accounts@company.com",
-      password: passwordHash,
+      email: "accounts@insightscope.com",
+      password: accountsHash,
       name: "Accountant Manager",
       role: "ACCOUNTS"
     }
   });
 
-  // Seed Customer CRM Data
-  const customer1 = await prisma.customer.upsert({
-    where: { email: "purchasing@acme.com" },
-    update: {},
-    create: {
-      name: "John Doe",
-      mobile: "9876543210",
-      email: "purchasing@acme.com",
-      businessName: "Acme Distribution Inc.",
-      gstNumber: "27AAAAA1111A1Z1",
-      type: "DISTRIBUTOR",
-      address: "456 Industrial Parkway, Unit 12, Pune",
-      status: "ACTIVE",
-      notes: "Preferred distributor for Western zone."
-    }
-  });
-
-  const customer2 = await prisma.customer.upsert({
-    where: { email: "info@retailshop.com" },
-    update: {},
-    create: {
-      name: "Alice Smith",
-      mobile: "8765432109",
-      email: "info@retailshop.com",
-      businessName: "The Corner Store Retailers",
-      type: "RETAIL",
-      address: "789 Main Market Lane, Mumbai",
-      status: "LEAD",
-      notes: "Lead sourced from trade fair."
-    }
-  });
-
-  // Seed Products Catalog
-  const prod1 = await prisma.product.upsert({
-    where: { sku: "WIDG-001" },
-    update: {},
-    create: {
-      name: "Universal Widget A",
-      sku: "WIDG-001",
-      category: "Hardware Accessories",
-      unitPrice: 15.50,
-      currentStock: 100,
-      minStockQty: 20,
-      location: "Warehouse Bin A4"
-    }
-  });
-
-  const prod2 = await prisma.product.upsert({
-    where: { sku: "SPRK-092" },
-    update: {},
-    create: {
-      name: "Precision Sprocket Max",
-      sku: "SPRK-092",
-      category: "Machined Parts",
-      unitPrice: 42.00,
-      currentStock: 15, // Under minimum threshold alert
-      minStockQty: 25,
-      location: "Warehouse Bin C1"
-    }
-  });
-
   console.log("Seeding complete! Seeded Users:");
-  console.log(`- Admin: admin@company.com / Password123`);
-  console.log(`- Sales: sales@company.com / Password123`);
-  console.log(`- Warehouse: warehouse@company.com / Password123`);
-  console.log(`- Accounts: accounts@company.com / Password123`);
+  console.log(`- Admin: admin@insightscope.com / Admin@12345`);
+  console.log(`- Sales: sales@insightscope.com / Sales@12345`);
+  console.log(`- Warehouse: warehouse@insightscope.com / Warehouse@12345`);
+  console.log(`- Accounts: accounts@insightscope.com / Accounts@12345`);
 }
 
 main()

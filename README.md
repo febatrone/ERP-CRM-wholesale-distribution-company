@@ -1,31 +1,70 @@
-# Mini ERP + CRM Operations Portal
+# 📊 Insight Scope — Enterprise ERP & CRM Operations Portal
 
-A modular monolith wholesale/distribution management portal built with Node.js, Express, TypeScript, Prisma, PostgreSQL, and React.
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Prisma ORM](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-## System Features
-*   **Authentication & Security:** JWT tokens with dynamic role-based access control (RBAC) guards guarding routes for `ADMIN`, `SALES`, `WAREHOUSE`, and `ACCOUNTS`.
-*   **CRM Customers Management:** Customer profiling (status stages, business contacts, and GST attributes) with append-only followups timeline history.
-*   **Products Catalog:** Inventory tracking with low-stock warnings, automatic stock ledger logs, and warehouse locations.
-*   **Sales Challan Workflow:** Create Draft/Confirmed challans. Enforces atomic transaction rollbacks (via database transaction locks) during confirmation to guarantee stock sufficiency and snapshot line item pricing history.
-*   **Invoice PDF Generation:** Exporter compiles Confirmed challans into structured invoices containing tax computations (18% default GST) and initiates downloads.
-*   **Uploads Module:** Secure integrations generating presigned AWS S3 URLs for asset storage.
+A professional, responsive **Modular Monolith Enterprise Resource Planning (ERP) & Customer Relationship Management (CRM)** suite. Designed for wholesale distribution operations, Insight Scope features robust role-based access control, transaction safety, real-time inventory tracking, and dynamic executive dashboards.
 
 ---
 
-## Local Setup
+## 🔗 Project Links
+
+*   **Live App:** [https://insightscope.febatrone.com/](https://insightscope.febatrone.com/)
+*   **Live Backend API:** [https://insight-scope-backend.onrender.com](https://insight-scope-backend.onrender.com)
+*   **GitHub Repository:** [https://github.com/febatrone/ERP-CRM-wholesale-distribution-company](https://github.com/febatrone/ERP-CRM-wholesale-distribution-company)
+
+---
+
+## 🔑 Role-Based Test Credentials
+
+The database has been seeded with dedicated test accounts for each operational role. Use the credentials below to log in:
+
+| Operational Role | Test Email | Password | Access Control Scope |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@insightscope.com` | `Admin@12345` | Complete system access, audit trails, configurations, database control. |
+| **Sales Rep** | `sales@insightscope.com` | `Sales@12345` | CRM pipelines, client registrations, sales order (challan) creations. |
+| **Warehouse Manager** | `warehouse@insightscope.com` | `Warehouse@12345` | Inventory control, low-stock indicators, manual stock additions & log tracking. |
+| **Accountant** | `accounts@insightscope.com` | `Accounts@12345` | Financial audits, confirmed order invoices, audit trail validation, reports. |
+
+---
+
+## 🚀 Key Features
+
+*   **🔐 Secure Identity Management:** Role-Based Access Control (RBAC) powered by JWT tokens, ensuring that users see only the options, charts, and modules matching their permission scope.
+*   **📈 Dynamic CRM Dashboard:** Executively aggregated line charts powered by Recharts that support 11 timeline preset filters (Today, Yesterday, Last 7/30 Days, Last 12 Months, Custom Date Range, and All Time) with dynamic daily/weekly/monthly grouping.
+*   **💼 Smart Customer Management:** Standardized customer records with a mobile country code selection dropdown, address-to-city dynamic extraction, and append-only timeline logs.
+*   **📦 Stock ledger & warn indicators:** Product inventory database tracking item locations, dynamic warning indicators when stock falls below set minimum thresholds, and manual ledger adjustments.
+*   **🧾 Atomic Sales Challan Workflows:** Supports Draft / Confirmed sales order workflows with transactional database locks. Order confirmation locks stock quantities and captures pricing snapshots.
+*   **📱 Mobile slide-over navigation:** Responsive sidebar navigation menu that automatically converts into a slide-over panel on mobile and tablet screens.
+
+---
+
+## 🛠️ Technology Stack
+
+*   **Frontend Client:** React (TypeScript), Vite, Tailwind CSS, Recharts, Lucide React, HTML2Canvas.
+*   **Backend Server:** Node.js, Express, TypeScript, Zod Schema Validations, JWT Middleware.
+*   **Database:** PostgreSQL (managed through Prisma ORM with relational integrity).
+
+---
+
+## 💻 Local Setup & Installation
 
 ### Prerequisites
-*   Node.js v18+
-*   PostgreSQL running locally (or Docker Desktop)
+*   [Node.js](https://nodejs.org/) v18+
+*   PostgreSQL instance running locally (or Docker Desktop)
 
 ### 1. Database Setup
-Ensure PostgreSQL is active. Update the `backend/.env` configuration:
+Create a PostgreSQL database (e.g. `mini_erp`). Configure your `backend/.env` environment settings:
 ```env
-DATABASE_URL="postgresql://postgres@localhost:5432/mini_erp?schema=public"
-JWT_SECRET="your_secret_key"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mini_erp?schema=public"
+JWT_SECRET="your_secure_jwt_token_secret_key"
 ```
 
-Configure structure and seed defaults:
+Create schema structures and seed initial user credentials:
 ```bash
 cd backend
 npm install
@@ -34,33 +73,36 @@ npx tsc prisma/seed.ts --module commonjs --ignoreConfig --outDir dist-seed
 node dist-seed/seed.js
 ```
 
-Seeded credentials (Password: `Password123`):
-*   **Admin:** `admin@company.com`
-*   **Sales:** `sales@company.com`
-*   **Warehouse:** `warehouse@company.com`
-*   **Accounts:** `accounts@company.com`
-
-### 2. Startup Servers
-
-**Backend API:**
+### 2. Run Backend Server
 ```bash
-cd backend
 npm run dev
 ```
-Runs at `http://localhost:5000`
+The API server will run at `http://localhost:5000`. You can inspect endpoints via `http://localhost:5000/api-docs`.
 
-**Frontend Client:**
+### 3. Run Frontend Client
+Configure the `.env` settings inside the `frontend` folder:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+Start the Vite development server:
 ```bash
-cd frontend
+cd ../frontend
 npm install
 npm run dev
 ```
-Runs at `http://localhost:5173`
+The client app will launch at `http://localhost:5173`.
 
 ---
 
-## Docker Setup
-Launch the entire services stack (Postgres Database, Express API, and Nginx client) locally:
+## 🐳 Docker Stack Deployment
+
+Launch the entire system locally (including PostgreSQL, Express API server, and Nginx client proxying) with a single command:
 ```bash
 docker-compose up --build -d
 ```
+
+---
+
+## 🛡️ Security Audit & Transaction Safety
+All write transactions (such as confirming sales challans and adjusting inventory logs) are executed inside isolated database transaction blocks (`prisma.$transaction`). This prevents concurrent race conditions and ensures that stock movements cannot result in negative stock balances.
