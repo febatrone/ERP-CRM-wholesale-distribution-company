@@ -19,6 +19,7 @@ import {
   FileText,
   X,
   ArrowRight,
+  Menu,
 } from 'lucide-react';
 import { ActiveTab } from './Sidebar';
 import { HighlightText } from './HighlightText';
@@ -41,6 +42,7 @@ interface HeaderProps {
   onViewChallanDetail?: (challan: SalesChallan) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onOpenMobileSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -61,6 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   onViewChallanDetail,
   searchQuery,
   onSearchChange,
+  onOpenMobileSidebar,
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(true);
@@ -160,6 +163,15 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Left Welcome Date Banner */}
         <div className="flex items-center space-x-3 shrink-0 py-1">
+          {onOpenMobileSidebar && (
+            <button
+              onClick={onOpenMobileSidebar}
+              className="md:hidden p-2 hover:bg-slate-100 rounded-xl text-slate-700 transition-colors"
+              title="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
           <div>
             <div className="flex items-center space-x-2.5">
               <p className="text-sm font-bold text-slate-500 tracking-tight">Welcome back!</p>

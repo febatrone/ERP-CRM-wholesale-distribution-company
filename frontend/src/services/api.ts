@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { Customer, CustomerStatus, CustomerType, Product, SalesChallan, StockLog, User, DashboardStats, ChallanStatus } from '../types';
 
 let authToken: string | null = localStorage.getItem('authToken');
@@ -411,10 +412,10 @@ export const api = {
     createdBy?: string;
     createdById?: string;
   }): Promise<SalesChallan> {
-    // server.ts expects mixed-case: 'Draft' | 'Confirmed' | 'Cancelled'
+    // server.ts Zod schema expects uppercase: 'DRAFT' | 'CONFIRMED'
     const backendPayload = {
       ...payload,
-      status: payload.status || 'Draft',
+      status: (payload.status || 'Draft').toUpperCase(),
     };
     const res = await this.fetchWithAuth('/api/challans', {
       method: 'POST',

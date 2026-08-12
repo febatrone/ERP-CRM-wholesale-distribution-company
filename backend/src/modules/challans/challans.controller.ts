@@ -44,6 +44,7 @@ router.post("/", authMiddleware, roleMiddleware(["ADMIN", "SALES"]), async (req:
   try {
     const parse = challanSchema.safeParse(req.body);
     if (!parse.success) {
+      console.error("CHALLAN VALIDATION FAILED:", parse.error.format());
       return next(new AppError("Validation failed", 400));
     }
 

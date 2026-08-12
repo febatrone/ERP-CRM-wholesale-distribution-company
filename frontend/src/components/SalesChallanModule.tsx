@@ -451,8 +451,8 @@ export const SalesChallanModule: React.FC<SalesChallanModuleProps> = ({
                             <input
                               type="number"
                               min="1"
-                              value={item.quantity}
-                              onChange={(e) => handleItemQuantityChange(index, Number(e.target.value))}
+                              value={item.quantity === 0 ? '' : item.quantity}
+                              onChange={(e) => handleItemQuantityChange(index, e.target.value === '' ? 0 : Number(e.target.value))}
                               className="w-20 p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-center"
                             />
                           </div>

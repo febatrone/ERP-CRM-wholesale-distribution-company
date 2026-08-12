@@ -62,6 +62,7 @@ export default function App() {
   const [initialLowStockFilter, setInitialLowStockFilter] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [crmViewMode, setCrmViewMode] = useState<'kanban' | 'table' | 'analytics'>('kanban');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Fetch all app data
   const loadAppData = useCallback(async () => {
@@ -464,6 +465,7 @@ export default function App() {
         }}
         searchQuery={globalSearchQuery}
         onSearchChange={setGlobalSearchQuery}
+        onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
       />
 
       {/* Main App Layout */}
@@ -483,6 +485,8 @@ export default function App() {
           crmViewMode={crmViewMode}
           onCrmViewModeChange={setCrmViewMode}
           onLogout={handleLogout}
+          isOpenMobile={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Content Body */}

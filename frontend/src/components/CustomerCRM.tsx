@@ -58,6 +58,21 @@ const PIPELINE_STAGES: { id: PipelineStage; label: string; color: string; border
   { id: 'Closed Lost', label: '6. Closed Lost', color: 'text-slate-600', border: 'border-slate-300', bg: 'bg-slate-50' },
 ];
 
+const COUNTRY_CODES = [
+  { code: '+91', country: 'India' },
+  { code: '+1', country: 'USA/Canada' },
+  { code: '+44', country: 'United Kingdom' },
+  { code: '+971', country: 'UAE' },
+  { code: '+61', country: 'Australia' },
+  { code: '+65', country: 'Singapore' },
+  { code: '+49', country: 'Germany' },
+  { code: '+33', country: 'France' },
+  { code: '+81', country: 'Japan' },
+  { code: '+86', country: 'China' },
+  { code: '+254', country: 'Kenya' },
+  { code: '+27', country: 'South Africa' },
+];
+
 export const CustomerCRM: React.FC<CustomerCRMProps> = ({
   customers,
   userRole,
@@ -96,6 +111,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [drawerTab, setDrawerTab] = useState<'overview' | 'pipeline' | 'activities' | 'orders'>('overview');
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+91');
 
   // Follow-up form state inside drawer
   const [activityNoteInput, setActivityNoteInput] = useState('');
@@ -158,6 +174,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
 
   const openCreateModal = () => {
     setEditingCustomer(null);
+    setSelectedCountryCode('+91');
     setFormData({
       name: '',
       mobile: '',
@@ -170,12 +187,12 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
       nextFollowUpDate: '',
       notes: '',
       pipelineStage: 'Inquiry',
-      dealValue: 250000,
+      dealValue: 0,
       winProbability: 40,
       expectedCloseDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       assignedRep: 'Alex Vance (Sales)',
       leadSource: 'Website Inquiry',
-      creditLimit: 500000,
+      creditLimit: 0,
     });
     setFormError('');
     setShowAddModal(true);
@@ -183,9 +200,20 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
 
   const openEditModal = (c: Customer) => {
     setEditingCustomer(c);
+    
+    // Parse mobile number country code
+    let parsedCode = '+91';
+    let parsedNumber = c.mobile;
+    const match = c.mobile.match(/^(\+\d+)\s*(.*)$/);
+    if (match) {
+      parsedCode = match[1];
+      parsedNumber = match[2];
+    }
+    
+    setSelectedCountryCode(parsedCode);
     setFormData({
       name: c.name,
-      mobile: c.mobile,
+      mobile: parsedNumber,
       email: c.email,
       businessName: c.businessName,
       gstNumber: c.gstNumber || '',
@@ -195,7 +223,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
       nextFollowUpDate: c.nextFollowUpDate || '',
       notes: c.notes || '',
       pipelineStage: c.pipelineStage || 'Inquiry',
-      dealValue: c.dealValue || 250000,
+      dealValue: c.dealValue || 0,
       winProbability: c.winProbability || 50,
       expectedCloseDate: c.expectedCloseDate || '',
       assignedRep: c.assignedRep || 'Alex Vance (Sales)',
@@ -215,12 +243,17 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
       return;
     }
 
+    const finalPayload = {
+      ...formData,
+      mobile: `${selectedCountryCode} ${formData.mobile.trim()}`
+    };
+
     setIsSubmitting(true);
     try {
       if (editingCustomer) {
-        await onUpdateCustomer(editingCustomer.id, formData);
+        await onUpdateCustomer(editingCustomer.id, finalPayload);
       } else {
-        await onAddCustomer(formData);
+        await onAddCustomer(finalPayload);
       }
       setShowAddModal(false);
     } catch (err: any) {
@@ -1054,7 +1087,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
             )}
 
             <form onSubmit={handleSubmitForm} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Business Name *</label>
                   <input
@@ -1079,17 +1112,30 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Mobile Number *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                    placeholder="+91 98201 44321"
-                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
+                  <div className="flex space-x-1.5">
+                    <select
+                      value={selectedCountryCode}
+                      onChange={(e) => setSelectedCountryCode(e.target.value)}
+                      className="w-28 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none"
+                    >
+                      {COUNTRY_CODES.map((item) => (
+                        <option key={item.code} value={item.code}>
+                          {item.code} ({item.country})
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      required
+                      value={formData.mobile}
+                      onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                      placeholder="98201 44321"
+                      className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg font-bold"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
@@ -1104,7 +1150,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">GSTIN / Tax Number</label>
                   <input
@@ -1129,7 +1175,7 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Customer Type</label>
                   <select
@@ -1163,14 +1209,14 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Est. Deal Value (₹)</label>
                   <input
                     type="number"
-                    value={formData.dealValue}
-                    onChange={(e) => setFormData({ ...formData, dealValue: Number(e.target.value) })}
+                    value={formData.dealValue === 0 ? '' : formData.dealValue}
+                    onChange={(e) => setFormData({ ...formData, dealValue: e.target.value === '' ? 0 : Number(e.target.value) })}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Assigned Sales Rep</label>
                   <input
@@ -1185,8 +1231,8 @@ export const CustomerCRM: React.FC<CustomerCRMProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Credit Limit (₹)</label>
                   <input
                     type="number"
-                    value={formData.creditLimit}
-                    onChange={(e) => setFormData({ ...formData, creditLimit: Number(e.target.value) })}
+                    value={formData.creditLimit === 0 ? '' : formData.creditLimit}
+                    onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value === '' ? 0 : Number(e.target.value) })}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono"
                   />
                 </div>

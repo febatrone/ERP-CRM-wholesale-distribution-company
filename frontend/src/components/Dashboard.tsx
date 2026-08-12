@@ -65,7 +65,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onViewCustomerDetail,
   onAddStockMovement,
 }) => {
-  const [chartTimeframe, setChartTimeframe] = useState<'Last 12 Months' | 'This Year'>('Last 12 Months');
+  const [chartTimeframe, setChartTimeframe] = useState<
+    | 'Today'
+    | 'Yesterday'
+    | 'Last 7 Days'
+    | 'Last 30 Days'
+    | 'Last 3 Months'
+    | 'Last 6 Months'
+    | 'Last 12 Months'
+    | 'This Year'
+    | 'Last Year'
+    | 'Custom Date Range'
+    | 'All Time'
+  >('Last 12 Months');
+  const [customStartDate, setCustomStartDate] = useState<string>(
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  );
+  const [customEndDate, setCustomEndDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
   const [restockingIds, setRestockingIds] = useState<Set<string>>(new Set());
 
   const handleRestock = useCallback(async (product: Product) => {
@@ -83,21 +101,258 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [onAddStockMovement, restockingIds]);
 
-  // Compute monthly revenue trends from confirmed sales challans
-  const monthlyRevenueData = [
-    { month: 'Jan', confirmedRevenue: 125000, draftPipeline: 35000 },
-    { month: 'Feb', confirmedRevenue: 160000, draftPipeline: 40000 },
-    { month: 'Mar', confirmedRevenue: 195000, draftPipeline: 52000 },
-    { month: 'Apr', confirmedRevenue: 140000, draftPipeline: 30000 },
-    { month: 'May', confirmedRevenue: 210000, draftPipeline: 65000 },
-    { month: 'Jun', confirmedRevenue: 280000, draftPipeline: 48000 },
-    { month: 'Jul', confirmedRevenue: 230000, draftPipeline: 55000 },
-    { month: 'Aug', confirmedRevenue: stats.totalRevenue || 295000, draftPipeline: 42000 },
-    { month: 'Sep', confirmedRevenue: 310000, draftPipeline: 60000 },
-    { month: 'Oct', confirmedRevenue: 270000, draftPipeline: 45000 },
-    { month: 'Nov', confirmedRevenue: 340000, draftPipeline: 70000 },
-    { month: 'Dec', confirmedRevenue: 390000, draftPipeline: 80000 },
-  ];
+  // Compute revenue trends dynamically based on the selected timeframe preset
+  const monthlyRevenueData = (() => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+
+    // Helpers to check date matching
+    const isSameDay = (d1: Date, d2: Date) =>
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate();
+
+    // 1 & 2: Today / Yesterday (Group by Hour)
+    if (chartTimeframe === 'Today' || chartTimeframe === 'Yesterday') {
+      const targetDay = chartTimeframe === 'Today' ? startOfToday : startOfYesterday;
+      const result: { month: string; confirmedRevenue: number; draftPipeline: number }[] = [];
+
+      for (let hour = 0; hour < 24; hour += 2) {
+        const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+        let confirmedRevenue = 0;
+        let draftPipeline = 0;
+
+        recentChallans.forEach((c) => {
+          const cDate = new Date(c.createdAt);
+          if (isSameDay(cDate, targetDay) && cDate.getHours() >= hour && cDate.getHours() < hour + 2) {
+            if (c.status === 'Confirmed') {
+              confirmedRevenue += c.totalAmount;
+            } else if (c.status === 'Draft') {
+              draftPipeline += c.totalAmount;
+            }
+          }
+        });
+
+        result.push({ month: hourLabel, confirmedRevenue, draftPipeline });
+      }
+      return result;
+    }
+
+    // 3 & 4: Last 7 Days / Last 30 Days (Group by Day)
+    if (chartTimeframe === 'Last 7 Days' || chartTimeframe === 'Last 30 Days') {
+      const daysCount = chartTimeframe === 'Last 7 Days' ? 7 : 30;
+      const result: { month: string; confirmedRevenue: number; draftPipeline: number }[] = [];
+
+      for (let i = daysCount - 1; i >= 0; i--) {
+        const targetDate = new Date(startOfToday.getTime() - i * 24 * 60 * 60 * 1000);
+        const dayLabel = `${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
+
+        let confirmedRevenue = 0;
+        let draftPipeline = 0;
+
+        recentChallans.forEach((c) => {
+          const cDate = new Date(c.createdAt);
+          if (isSameDay(cDate, targetDate)) {
+            if (c.status === 'Confirmed') {
+              confirmedRevenue += c.totalAmount;
+            } else if (c.status === 'Draft') {
+              draftPipeline += c.totalAmount;
+            }
+          }
+        });
+
+        result.push({ month: dayLabel, confirmedRevenue, draftPipeline });
+      }
+      return result;
+    }
+
+    // 5 & 6 & 7: Last 3 / 6 / 12 Months (Group by Month)
+    if (
+      chartTimeframe === 'Last 3 Months' ||
+      chartTimeframe === 'Last 6 Months' ||
+      chartTimeframe === 'Last 12 Months'
+    ) {
+      const monthsCount =
+        chartTimeframe === 'Last 3 Months' ? 3 : chartTimeframe === 'Last 6 Months' ? 6 : 12;
+      const result: { month: string; confirmedRevenue: number; draftPipeline: number }[] = [];
+
+      for (let i = monthsCount - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const targetMonth = d.getMonth();
+        const targetYear = d.getFullYear();
+
+        let confirmedRevenue = 0;
+        let draftPipeline = 0;
+
+        recentChallans.forEach((c) => {
+          const cDate = new Date(c.createdAt);
+          if (cDate.getFullYear() === targetYear && cDate.getMonth() === targetMonth) {
+            if (c.status === 'Confirmed') {
+              confirmedRevenue += c.totalAmount;
+            } else if (c.status === 'Draft') {
+              draftPipeline += c.totalAmount;
+            }
+          }
+        });
+
+        result.push({
+          month: `${monthNames[targetMonth]} ${targetYear}`,
+          confirmedRevenue,
+          draftPipeline,
+        });
+      }
+      return result;
+    }
+
+    // 8 & 9: This Year / Last Year (Group by Month)
+    if (chartTimeframe === 'This Year' || chartTimeframe === 'Last Year') {
+      const targetYear = chartTimeframe === 'This Year' ? now.getFullYear() : now.getFullYear() - 1;
+
+      return monthNames.map((name, index) => {
+        let confirmedRevenue = 0;
+        let draftPipeline = 0;
+
+        recentChallans.forEach((c) => {
+          const cDate = new Date(c.createdAt);
+          if (cDate.getFullYear() === targetYear && cDate.getMonth() === index) {
+            if (c.status === 'Confirmed') {
+              confirmedRevenue += c.totalAmount;
+            } else if (c.status === 'Draft') {
+              draftPipeline += c.totalAmount;
+            }
+          }
+        });
+
+        return { month: `${name} ${targetYear}`, confirmedRevenue, draftPipeline };
+      });
+    }
+
+    // 10: All Time (Group by Month from oldest date)
+    if (chartTimeframe === 'All Time') {
+      if (recentChallans.length === 0) {
+        return [];
+      }
+
+      let oldestDate = new Date();
+      recentChallans.forEach((c) => {
+        const cDate = new Date(c.createdAt);
+        if (cDate < oldestDate) oldestDate = cDate;
+      });
+
+      const result: { month: string; confirmedRevenue: number; draftPipeline: number }[] = [];
+      const startYear = oldestDate.getFullYear();
+      const startMonth = oldestDate.getMonth();
+      const endYear = now.getFullYear();
+      const endMonth = now.getMonth();
+
+      let currYear = startYear;
+      let currMonth = startMonth;
+
+      while (currYear < endYear || (currYear === endYear && currMonth <= endMonth)) {
+        let confirmedRevenue = 0;
+        let draftPipeline = 0;
+
+        recentChallans.forEach((c) => {
+          const cDate = new Date(c.createdAt);
+          if (cDate.getFullYear() === currYear && cDate.getMonth() === currMonth) {
+            if (c.status === 'Confirmed') {
+              confirmedRevenue += c.totalAmount;
+            } else if (c.status === 'Draft') {
+              draftPipeline += c.totalAmount;
+            }
+          }
+        });
+
+        result.push({
+          month: `${monthNames[currMonth]} ${currYear}`,
+          confirmedRevenue,
+          draftPipeline,
+        });
+
+        currMonth++;
+        if (currMonth > 11) {
+          currMonth = 0;
+          currYear++;
+        }
+      }
+      return result;
+    }
+
+    // 11: Custom Date Range
+    if (chartTimeframe === 'Custom Date Range') {
+      const start = new Date(customStartDate + 'T00:00:00');
+      const end = new Date(customEndDate + 'T23:59:59');
+
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      const result: { month: string; confirmedRevenue: number; draftPipeline: number }[] = [];
+
+      if (diffDays <= 31) {
+        // Group by Day
+        for (let i = 0; i < diffDays; i++) {
+          const targetDate = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
+          const dayLabel = `${targetDate.getDate()} ${monthNames[targetDate.getMonth()]}`;
+
+          let confirmedRevenue = 0;
+          let draftPipeline = 0;
+
+          recentChallans.forEach((c) => {
+            const cDate = new Date(c.createdAt);
+            if (isSameDay(cDate, targetDate)) {
+              if (c.status === 'Confirmed') {
+                confirmedRevenue += c.totalAmount;
+              } else if (c.status === 'Draft') {
+                draftPipeline += c.totalAmount;
+              }
+            }
+          });
+
+          result.push({ month: dayLabel, confirmedRevenue, draftPipeline });
+        }
+      } else {
+        // Group by Month
+        let currYear = start.getFullYear();
+        let currMonth = start.getMonth();
+        const endYear = end.getFullYear();
+        const endMonth = end.getMonth();
+
+        while (currYear < endYear || (currYear === endYear && currMonth <= endMonth)) {
+          let confirmedRevenue = 0;
+          let draftPipeline = 0;
+
+          recentChallans.forEach((c) => {
+            const cDate = new Date(c.createdAt);
+            if (cDate.getFullYear() === currYear && cDate.getMonth() === currMonth) {
+              if (c.status === 'Confirmed') {
+                confirmedRevenue += c.totalAmount;
+              } else if (c.status === 'Draft') {
+                draftPipeline += c.totalAmount;
+              }
+            }
+          });
+
+          result.push({
+            month: `${monthNames[currMonth]} ${currYear}`,
+            confirmedRevenue,
+            draftPipeline,
+          });
+
+          currMonth++;
+          if (currMonth > 11) {
+            currMonth = 0;
+            currYear++;
+          }
+        }
+      }
+      return result;
+    }
+
+    return [];
+  })();
 
   // Role Badge and Title Configuration
   const roleConfig: Record<
@@ -486,14 +741,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {chartTimeframe === 'Custom Date Range' && (
+                <div className="flex items-center space-x-1.5">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                  />
+                  <span className="text-[10px] font-extrabold text-slate-400">to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="px-2 py-1 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none"
+                  />
+                </div>
+              )}
               <select
                 value={chartTimeframe}
                 onChange={(e) => setChartTimeframe(e.target.value as any)}
                 className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all focus:outline-none"
               >
+                <option value="Today">Today</option>
+                <option value="Yesterday">Yesterday</option>
+                <option value="Last 7 Days">Last 7 Days</option>
+                <option value="Last 30 Days">Last 30 Days</option>
+                <option value="Last 3 Months">Last 3 Months</option>
+                <option value="Last 6 Months">Last 6 Months</option>
                 <option value="Last 12 Months">Last 12 Months</option>
                 <option value="This Year">This Year (2026)</option>
+                <option value="Last Year">Last Year</option>
+                <option value="Custom Date Range">Custom Date Range</option>
+                <option value="All Time">All Time (Past Data)</option>
               </select>
             </div>
           </div>
@@ -728,7 +1009,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </td>
 
                     {/* City */}
-                    <td className="py-3.5 px-4 text-slate-500">Mumbai</td>
+                    <td className="py-3.5 px-4 text-slate-500">
+                      {(() => {
+                        if (!c.customerAddress) return 'N/A';
+                        const parts = c.customerAddress.split(',').map(p => p.trim()).filter(Boolean);
+                        if (parts.length === 1) return parts[0];
+                        if (parts.length === 2) return parts[0];
+                        return parts[parts.length - 2] || 'N/A';
+                      })()}
+                    </td>
 
                     {/* Action */}
                     <td className="py-3.5 px-4 text-right">

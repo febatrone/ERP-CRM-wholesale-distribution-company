@@ -16,6 +16,7 @@ import {
   ChevronDown,
   UserCheck,
   LogOut,
+  X,
 } from 'lucide-react';
 import { UserRole, User } from '../types';
 
@@ -32,6 +33,8 @@ interface SidebarProps {
   crmViewMode?: 'kanban' | 'table' | 'analytics';
   onCrmViewModeChange?: (mode: 'kanban' | 'table' | 'analytics') => void;
   onLogout?: () => void;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -45,6 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   crmViewMode = 'kanban',
   onCrmViewModeChange,
   onLogout,
+  isOpenMobile = false,
+  onCloseMobile,
 }) => {
   const mainNavItems = [
     {
@@ -95,10 +100,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   ];
 
-  return (
+  const sidebarContent = (
     <aside
       id="main-sidebar"
-      className="w-full md:w-64 bg-white/90 backdrop-blur-md text-slate-800 h-auto md:h-[calc(100vh-3.5rem)] md:max-h-[calc(100vh-3.5rem)] md:sticky md:top-5 my-2 ml-2 rounded-3xl flex flex-col border border-slate-200/80 shadow-[0_4px_25px_rgba(0,0,0,0.03)] select-none shrink-0 z-10 transition-all"
+      className={`${
+        isOpenMobile
+          ? 'fixed inset-y-0 left-0 w-64 bg-white text-slate-800 h-full z-50 flex flex-col border-r border-slate-200 shadow-2xl animate-slide-in'
+          : 'hidden md:flex md:flex-col md:w-64 bg-white/90 backdrop-blur-md text-slate-800 h-[calc(100vh-3.5rem)] max-h-[calc(100vh-3.5rem)] sticky top-5 my-2 ml-2 rounded-3xl border border-slate-200/80 shadow-[0_4px_25px_rgba(0,0,0,0.03)] select-none shrink-0 z-10 transition-all'
+      }`}
     >
       {/* Brand Header */}
       <div className="p-5 flex items-center justify-between border-b border-slate-100">
@@ -119,6 +128,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Enterprise ERP & CRM</p>
           </div>
         </div>
+
+        {isOpenMobile && onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 text-slate-400 hover:text-slate-655 hover:bg-slate-100 rounded-lg"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Sections */}
@@ -136,7 +154,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div key={item.id} className="space-y-1">
                   <button
                     id={`nav-item-${item.id}`}
-                    onClick={() => isPermitted && onTabChange(item.id)}
+                    onClick={() => {
+                      if (isPermitted) {
+                        onTabChange(item.id);
+                        onCloseMobile?.();
+                      }
+                    }}
                     disabled={!isPermitted}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
                       isActive
@@ -181,6 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 } else if (sub.id === 'crm-contacts' && onCrmViewModeChange) {
                                   onCrmViewModeChange('table');
                                 }
+                                onCloseMobile?.();
                               }
                             }}
                             className={`block w-full text-left text-[11px] py-1 transition-colors flex items-center space-x-1.5 ${
@@ -286,9 +310,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[10px] text-slate-400 truncate">{currentUser?.email || 'patenson_28@google.com'}</p>
           </div>
         </div>
-        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {isOpenMobile && (
+        <div
+          onClick={onCloseMobile}
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden"
+        />
+      )}
+      {sidebarContent}
+    </>
   );
 };
 

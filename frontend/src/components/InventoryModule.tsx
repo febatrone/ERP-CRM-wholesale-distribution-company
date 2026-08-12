@@ -417,7 +417,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">SKU / Code *</label>
                   <input
@@ -442,7 +442,7 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Unit Price (₹) *</label>
                   <input
@@ -450,8 +450,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                     min="0"
                     step="0.01"
                     required
-                    value={productFormData.unitPrice}
-                    onChange={(e) => setProductFormData({ ...productFormData, unitPrice: parseFloat(e.target.value) || 0 })}
+                    value={productFormData.unitPrice === 0 ? '' : productFormData.unitPrice}
+                    onChange={(e) => setProductFormData({ ...productFormData, unitPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                   />
                 </div>
@@ -461,8 +461,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                     type="number"
                     min="0"
                     required
-                    value={productFormData.currentStock}
-                    onChange={(e) => setProductFormData({ ...productFormData, currentStock: Number(e.target.value) })}
+                    value={productFormData.currentStock === 0 ? '' : productFormData.currentStock}
+                    onChange={(e) => setProductFormData({ ...productFormData, currentStock: e.target.value === '' ? 0 : Number(e.target.value) })}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                   />
                 </div>
@@ -471,8 +471,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   <input
                     type="number"
                     min="0"
-                    value={productFormData.minStockAlert}
-                    onChange={(e) => setProductFormData({ ...productFormData, minStockAlert: Number(e.target.value) })}
+                    value={productFormData.minStockAlert === 0 ? '' : productFormData.minStockAlert}
+                    onChange={(e) => setProductFormData({ ...productFormData, minStockAlert: e.target.value === '' ? 0 : Number(e.target.value) })}
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
                   />
                 </div>
@@ -573,8 +573,8 @@ export const InventoryModule: React.FC<InventoryModuleProps> = ({
                   type="number"
                   min="1"
                   required
-                  value={stockFormData.quantity}
-                  onChange={(e) => setStockFormData({ ...stockFormData, quantity: Number(e.target.value) })}
+                  value={stockFormData.quantity === 0 ? '' : stockFormData.quantity}
+                  onChange={(e) => setStockFormData({ ...stockFormData, quantity: e.target.value === '' ? 0 : Number(e.target.value) })}
                   className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold"
                 />
               </div>
