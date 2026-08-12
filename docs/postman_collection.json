@@ -1,0 +1,294 @@
+{
+  "info": {
+    "name": "Insight Scope ERP & CRM API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@insightscope.com\",\n  \"password\": \"Admin@12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticate user credentials and retrieve a JWT bearer token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "CRM Customers",
+      "item": [
+        {
+          "name": "Get Customers List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers?status=Active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Active"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create New Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rajesh Traders Ltd\",\n  \"mobile\": \"+919876543210\",\n  \"email\": \"contact@rajeshtraders.com\",\n  \"businessName\": \"Rajesh Electricals\",\n  \"gstNumber\": \"27AAAAA1111A1Z1\",\n  \"customerType\": \"Wholesale\",\n  \"address\": \"45 Central Market St, Mumbai, MH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log CRM Follow-up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Spoke to customer regarding new price catalogs. They showed strong interest in widgets.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/followups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}",
+                "followups"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products Inventory",
+      "item": [
+        {
+          "name": "Get Products Catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create New Product SKU",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Industrial Widget 500W\",\n  \"sku\": \"WDG-500W\",\n  \"category\": \"Power Supplies\",\n  \"unitPrice\": 185.00,\n  \"currentStock\": 150,\n  \"minStockQty\": 30,\n  \"location\": \"Rack B-Line 3\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sales Challans & Orders",
+      "item": [
+        {
+          "name": "Get Sales Challans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/challans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challans"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Draft Sales Challan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 5\n    }\n  ],\n  \"status\": \"DRAFT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challans"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirm Draft Challan",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "challans",
+                "{{challanId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://insight-scope-backend.onrender.com/api"
+    },
+    {
+      "key": "jwtToken",
+      "value": "YOUR_JWT_TOKEN_HERE"
+    },
+    {
+      "key": "customerId",
+      "value": "CUSTOMER_ID"
+    },
+    {
+      "key": "productId",
+      "value": "PRODUCT_ID"
+    },
+    {
+      "key": "challanId",
+      "value": "CHALLAN_ID"
+    }
+  ]
+}

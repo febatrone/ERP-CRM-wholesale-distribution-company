@@ -16,6 +16,7 @@ A professional, responsive **Modular Monolith Enterprise Resource Planning (ERP)
 *   **Live App:** [https://insightscope.febatrone.com/](https://insightscope.febatrone.com/)
 *   **Live Backend API:** [https://insight-scope-backend.onrender.com](https://insight-scope-backend.onrender.com)
 *   **GitHub Repository:** [https://github.com/febatrone/ERP-CRM-wholesale-distribution-company](https://github.com/febatrone/ERP-CRM-wholesale-distribution-company)
+*   **Postman API Collection:** [docs/postman_collection.json](https://github.com/febatrone/ERP-CRM-wholesale-distribution-company/blob/main/docs/postman_collection.json)
 
 ---
 

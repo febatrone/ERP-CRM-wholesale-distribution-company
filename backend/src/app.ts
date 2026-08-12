@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -9,6 +11,30 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve Postman collection file download
+app.get("/api/docs/postman", (req, res) => {
+  const possiblePaths = [
+    path.join(__dirname, "../../docs/postman_collection.json"),
+    path.join(__dirname, "../../../docs/postman_collection.json"),
+    path.join(process.cwd(), "docs/postman_collection.json"),
+    path.join(process.cwd(), "../docs/postman_collection.json"),
+  ];
+
+  let resolvedPath = "";
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      resolvedPath = p;
+      break;
+    }
+  }
+
+  if (resolvedPath) {
+    res.download(resolvedPath, "insightscope_postman_collection.json");
+  } else {
+    res.status(404).json({ error: "Postman collection file not found" });
+  }
+});
 
 // Routes Modules imports
 import authRouter from "./modules/auth/auth.controller";
